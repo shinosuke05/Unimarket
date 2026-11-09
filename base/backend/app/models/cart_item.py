@@ -9,7 +9,7 @@ class CartItem(Base):
     id = Column(Integer, primary_key=True, index=True)
 
     cart_id = Column(Integer, ForeignKey("carts.id"), nullable=False)
-    product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
+    product_id = Column(Integer, ForeignKey("items.id"), nullable=False)
 
     quantity = Column(Integer, nullable=False, default=1)
 
@@ -18,4 +18,4 @@ class CartItem(Base):
     )
 
     cart = relationship("Cart", back_populates="items")
-    product = relationship("Product")
+    product = relationship("Item")

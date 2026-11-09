@@ -12,17 +12,14 @@ class OrderItem(Base):
 
     product_id = Column(
         Integer,
-        ForeignKey("products.id", ondelete="SET NULL"),
+        ForeignKey("items.id", ondelete="SET NULL"),
         nullable=True
     )
 
     product_name = Column(String(255), nullable=False)
-
     price_at_order = Column(Numeric(12, 2), nullable=False)
-
     quantity = Column(Integer, nullable=False)
-
     subtotal = Column(Numeric(12, 2), nullable=False)
 
     order = relationship("Order", back_populates="items")
-    product = relationship("Product")
+    product = relationship("Item")
