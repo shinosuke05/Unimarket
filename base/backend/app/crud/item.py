@@ -2,14 +2,21 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.enum import ProductStatus
 from app.models.item import Item
 from app.schemas.item import ItemCreate, ItemUpdate
 
 
-def get_items(db: Session, keyword: str | None = None) -> list[Item]:
+def get_items(
+    db: Session,
+    keyword: str | None = None,
+    status: ProductStatus | None = None,
+) -> list[Item]:
     query = select(Item).order_by(Item.id.desc())
     if keyword:
         query = query.where(Item.name.contains(keyword))
+    if status:
+        query = query.where(Item.status == status)
     return list(db.scalars(query))
 
 

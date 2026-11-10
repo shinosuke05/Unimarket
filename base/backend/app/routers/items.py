@@ -1,6 +1,6 @@
-"""API CRUD mẫu cho items. Đường dẫn đầy đủ: /api/items
+"""API CRUD cho items. Đường dẫn đầy đủ: /api/items
 
-    GET    /api/items          danh sách (tìm theo tên: ?q=com)
+    GET    /api/items          danh sách (?q=com tìm theo tên, ?status=AVAILABLE lọc trạng thái)
     GET    /api/items/{id}     chi tiết 1 item
     POST   /api/items          thêm mới
     PUT    /api/items/{id}     sửa
@@ -9,6 +9,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.enum import ProductStatus
 from app.crud import item as item_crud
 from app.db.session import get_db
 from app.schemas.item import ItemCreate, ItemOut, ItemUpdate
@@ -24,8 +25,12 @@ def get_item_or_404(item_id: int, db: Session = Depends(get_db)):
 
 
 @router.get("", response_model=list[ItemOut])
-def list_items(q: str | None = None, db: Session = Depends(get_db)):
-    return item_crud.get_items(db, keyword=q)
+def list_items(
+    q: str | None = None,
+    product_status: ProductStatus | None = None,
+    db: Session = Depends(get_db),
+):
+    return item_crud.get_items(db, keyword=q, status=product_status)
 
 
 @router.get("/{item_id}", response_model=ItemOut)

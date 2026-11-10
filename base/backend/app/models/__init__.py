@@ -1,3 +1,3 @@
-# Import mọi model ở đây để Base.metadata.create_all() "nhìn thấy" và tạo bảng.
-# Thêm model mới -> nhớ thêm 1 dòng import vào file này.
+"""Import mọi model ở đây để SQLAlchemy biết các bảng khi create_all."""
 from app.models.item import Item  # noqa: F401
+from app.models.user import User  # noqa: F401

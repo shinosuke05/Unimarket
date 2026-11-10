@@ -10,7 +10,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
-    APP_NAME: str = "KS25 Base API"
+    APP_NAME: str = "Unimarket API"
 
     DB_HOST: str = "127.0.0.1"
     DB_PORT: int = 3306
@@ -20,6 +20,11 @@ class Settings(BaseSettings):
 
     # Chuỗi các origin cách nhau bằng dấu phẩy, hoặc "*"
     CORS_ORIGINS: str = "*"
+
+    # Tài khoản admin được tạo bởi script seed_admin
+    ADMIN_EMAIL: str = ""
+    ADMIN_PASSWORD: str = ""
+    ADMIN_NAME: str = "System Admin"
 
     @property
     def database_url(self) -> str:
