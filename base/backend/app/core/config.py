@@ -20,6 +20,8 @@ class Settings(BaseSettings):
 
     # Chuỗi các origin cách nhau bằng dấu phẩy, hoặc "*"
     CORS_ORIGINS: str = "*"
+    JWT_SECRET_KEY: str
+    JWT_EXPIRE_MINUTES: int = 60
 
     @property
     def database_url(self) -> str:
