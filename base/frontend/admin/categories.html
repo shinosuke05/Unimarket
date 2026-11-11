@@ -8,8 +8,150 @@
 </head>
 <body data-page="categories" data-title="Danh mục">
   <main id="content">
-    <div class="card"><p class="placeholder">Chức năng đang được phát triển.</p></div>
+    <p class="error" id="err"></p>
+    <p class="ok" id="ok"></p>
+
+    <div class="card">
+      <h3 id="formTitle" style="margin-top:0">Thêm danh mục</h3>
+      <div class="toolbar">
+        <div class="field">
+          <label for="name">Tên danh mục *</label>
+          <input id="name" maxlength="100" placeholder="VD: Giáo trình">
+        </div>
+        <div class="field">
+          <label for="description">Mô tả</label>
+          <input id="description" placeholder="Mô tả ngắn (không bắt buộc)">
+        </div>
+        <button class="btn" id="saveBtn">Thêm</button>
+        <button class="btn-secondary" id="cancelBtn" style="display:none">Huỷ sửa</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>ID</th><th>Tên</th><th>Mô tả</th><th>Số sản phẩm</th><th>Thao tác</th></tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+    </div>
   </main>
+
   <script src="../js/admin.js"></script>
+  <script>
+    let editingId = null;
+    let categories = [];
+
+    const $ = (id) => document.getElementById(id);
+    const showError = (msg) => { $("err").textContent = msg || ""; $("ok").textContent = ""; };
+    const showOk = (msg) => { $("ok").textContent = msg || ""; $("err").textContent = ""; };
+
+    function resetForm() {
+      editingId = null;
+      $("name").value = "";
+      $("description").value = "";
+      $("formTitle").textContent = "Thêm danh mục";
+      $("saveBtn").textContent = "Thêm";
+      $("cancelBtn").style.display = "none";
+    }
+
+    function render() {
+      const tbody = $("rows");
+      tbody.replaceChildren();
+      if (!categories.length) {
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 5;
+        td.className = "placeholder";
+        td.textContent = "Chưa có danh mục nào.";
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+        return;
+      }
+      for (const c of categories) {
+        const tr = document.createElement("tr");
+        [c.id, c.name, c.description || "", c.product_count].forEach((v) => {
+          const td = document.createElement("td");
+          td.textContent = v;            // textContent: tránh XSS
+          tr.appendChild(td);
+        });
+
+        const act = document.createElement("td");
+        act.className = "actions";
+
+        const edit = document.createElement("button");
+        edit.className = "btn-sm";
+        edit.textContent = "Sửa";
+        edit.addEventListener("click", () => startEdit(c));
+
+        const del = document.createElement("button");
+        del.className = "btn-danger";
+        del.textContent = "Xoá";
+        if (c.product_count > 0) {
+          del.disabled = true;
+          del.title = "Danh mục còn sản phẩm, không thể xoá";
+        }
+        del.addEventListener("click", () => remove(c));
+
+        act.append(edit, del);
+        tr.appendChild(act);
+        tbody.appendChild(tr);
+      }
+    }
+
+    async function load() {
+      try {
+        categories = await AdminApp.api("/categories");
+        render();
+      } catch (e) { showError(e.message); }
+    }
+
+    function startEdit(c) {
+      editingId = c.id;
+      $("name").value = c.name;
+      $("description").value = c.description || "";
+      $("formTitle").textContent = "Sửa danh mục #" + c.id;
+      $("saveBtn").textContent = "Lưu";
+      $("cancelBtn").style.display = "";
+      $("name").focus();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    async function save() {
+      const name = $("name").value.trim();
+      if (!name) return showError("Vui lòng nhập tên danh mục");
+      const body = JSON.stringify({ name, description: $("description").value.trim() || null });
+      try {
+        if (editingId === null) {
+          await AdminApp.api("/categories", { method: "POST", body });
+          showOk("Đã thêm danh mục");
+        } else {
+          await AdminApp.api("/categories/" + editingId, { method: "PUT", body });
+          showOk("Đã cập nhật danh mục");
+        }
+        resetForm();
+        await load();
+      } catch (e) { showError(e.message); }
+    }
+
+    async function remove(c) {
+      if (!confirm(`Xoá danh mục "${c.name}"?`)) return;
+      try {
+        await AdminApp.api("/categories/" + c.id, { method: "DELETE" });
+        showOk("Đã xoá danh mục");
+        if (editingId === c.id) resetForm();
+        await load();
+      } catch (e) { showError(e.message); await load(); }
+    }
+
+    document.addEventListener("admin:ready", () => {
+      $("saveBtn").addEventListener("click", save);
+      $("cancelBtn").addEventListener("click", () => { resetForm(); showError(""); });
+      $("name").addEventListener("keydown", (e) => { if (e.key === "Enter") save(); });
+      load();
+    });
+  </script>
 </body>
 </html>

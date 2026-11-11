@@ -12,6 +12,7 @@ class ItemBase(BaseModel):
     name: str = Field(min_length=1, max_length=255, examples=["Cơm rang"])
     description: str | None = Field(default=None, examples=["Mô tả ngắn"])
     price: Decimal = Field(default=0, ge=0, examples=[45000])
+    category_id: int | None = None 
 
 
 class ItemCreate(ItemBase):
@@ -24,6 +25,7 @@ class ItemUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=255)
     description: str | None = None
     price: Decimal | None = Field(default=None, ge=0)
+    category_id: int | None = None 
 
 
 class ItemOut(ItemBase):
