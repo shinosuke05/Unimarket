@@ -1,0 +1,83 @@
+:root {
+  --primary: #2563eb;
+  --bg: #f3f4f6;
+  --card: #ffffff;
+  --text: #111827;
+  --muted: #6b7280;
+  --border: #e5e7eb;
+  --sidebar: #111827;
+  --sidebar-text: #d1d5db;
+  --sidebar-w: 240px;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); }
+
+/* Ẩn trang cho tới khi xác minh xong quyền admin (tránh nháy giao diện) */
+body[data-page] { visibility: hidden; }
+body[data-page].ready { visibility: visible; }
+
+.admin-shell { display: flex; min-height: 100vh; }
+
+.sidebar {
+  width: var(--sidebar-w); background: var(--sidebar); color: var(--sidebar-text);
+  position: fixed; inset: 0 auto 0 0; z-index: 30; overflow-y: auto;
+  transition: transform .25s ease;
+}
+.brand { padding: 20px; font-weight: 700; font-size: 18px; color: #fff; border-bottom: 1px solid #1f2937; }
+.sidebar nav { display: flex; flex-direction: column; padding: 12px; gap: 4px; }
+.sidebar a {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+  color: inherit; text-decoration: none; border-radius: 8px;
+}
+.sidebar a:hover { background: #1f2937; }
+.sidebar a.active { background: var(--primary); color: #fff; }
+
+.backdrop { display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, .45); z-index: 20; }
+
+.main-col { flex: 1; min-width: 0; margin-left: var(--sidebar-w); display: flex; flex-direction: column; }
+.topbar {
+  display: flex; align-items: center; gap: 12px; padding: 12px 20px;
+  background: var(--card); border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 10;
+}
+.topbar h1 { font-size: 18px; margin: 0; flex: 1; }
+.topbar .user { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--muted); }
+#menuBtn { display: none; font-size: 20px; background: none; border: 0; cursor: pointer; padding: 4px 8px; }
+
+button.btn, #logoutBtn {
+  background: var(--primary); color: #fff; border: 0; border-radius: 8px;
+  padding: 8px 14px; cursor: pointer; font-size: 14px;
+}
+#logoutBtn { background: #ef4444; }
+
+.content { padding: 20px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
+.card .label { color: var(--muted); font-size: 14px; }
+.card .value { font-size: 30px; font-weight: 700; margin-top: 6px; }
+.card + .card, .grid + .card { margin-top: 16px; }
+
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; min-width: 520px; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 14px; white-space: nowrap; }
+th { color: var(--muted); font-weight: 600; }
+
+.error { color: #dc2626; font-size: 14px; min-height: 20px; }
+.placeholder { color: var(--muted); text-align: center; padding: 40px 10px; }
+
+/* Màn hình đăng nhập */
+.login-box { max-width: 380px; margin: 10vh auto; padding: 0 16px; }
+.login-box form { display: flex; flex-direction: column; gap: 12px; }
+.login-box input { padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 15px; }
+
+/* Responsive: màn hình <= 900px thì sidebar thành menu trượt */
+@media (max-width: 900px) {
+  .sidebar { transform: translateX(-100%); }
+  body.menu-open .sidebar { transform: translateX(0); }
+  body.menu-open .backdrop { display: block; }
+  .main-col { margin-left: 0; }
+  #menuBtn { display: inline-block; }
+  .topbar .user span { display: none; }
+  .content { padding: 14px; }
+}

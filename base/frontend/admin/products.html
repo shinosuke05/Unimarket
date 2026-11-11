@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sản phẩm | Unimarket Admin</title>
+  <link rel="stylesheet" href="../css/admin.css">
+</head>
+<body data-page="products" data-title="Sản phẩm">
+  <main id="content">
+    <p class="error" id="err"></p>
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>ID</th><th>Tên</th><th>Giá</th><th>Tình trạng</th><th>Trạng thái</th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <script src="../js/admin.js"></script>
+  <script>
+    document.addEventListener("admin:ready", async () => {
+      try {
+        const items = await AdminApp.api("/items");
+        const tbody = document.getElementById("rows");
+        for (const it of items) {
+          const tr = document.createElement("tr");
+          [it.id, it.name, Number(it.price).toLocaleString("vi-VN") + " đ", it.condition, it.status].forEach((v) => {
+            const td = document.createElement("td");
+            td.textContent = v;   // textContent: tránh XSS
+            tr.appendChild(td);
+          });
+          tbody.appendChild(tr);
+        }
+      } catch (e) {
+        document.getElementById("err").textContent = e.message;
+      }
+    });
+  </script>
+</body>
+</html>

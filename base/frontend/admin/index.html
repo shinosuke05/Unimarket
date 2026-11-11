@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard | Unimarket Admin</title>
+  <link rel="stylesheet" href="../css/admin.css">
+</head>
+<body data-page="dashboard" data-title="Dashboard">
+  <main id="content">
+    <p class="error" id="err"></p>
+    <div class="grid">
+      <div class="card"><div class="label">Tổng sản phẩm</div><div class="value" data-stat="items_total">-</div></div>
+      <div class="card"><div class="label">Còn hàng</div><div class="value" data-stat="items_available">-</div></div>
+      <div class="card"><div class="label">Đã bán</div><div class="value" data-stat="items_sold">-</div></div>
+      <div class="card"><div class="label">Đang ẩn</div><div class="value" data-stat="items_hidden">-</div></div>
+      <div class="card"><div class="label">Khách hàng</div><div class="value" data-stat="customers_total">-</div></div>
+      <div class="card"><div class="label">Đơn hàng</div><div class="value">-</div></div>
+    </div>
+  </main>
+
+  <script src="../js/admin.js"></script>
+  <script>
+    document.addEventListener("admin:ready", async () => {
+      try {
+        const stats = await AdminApp.api("/admin/stats");
+        for (const [key, value] of Object.entries(stats)) {
+          const el = document.querySelector(`[data-stat="${key}"]`);
+          if (el) el.textContent = value;
+        }
+      } catch (e) {
+        document.getElementById("err").textContent = e.message;
+      }
+    });
+  </script>
+</body>
+</html>
