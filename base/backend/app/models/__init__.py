@@ -1,3 +1,5 @@
-# Import mọi model ở đây để Base.metadata.create_all() "nhìn thấy" và tạo bảng.
-# Thêm model mới -> nhớ thêm 1 dòng import vào file này.
+# Giữ model mẫu của thầy, bổ sung model UniMarket để Base.metadata nhận diện.
 from app.models.item import Item  # noqa: F401
+from app.models.category import Category  # noqa: F401
+from app.models.product import Product  # noqa: F401
+from app.models.product_image import ProductImage  # noqa: F401
