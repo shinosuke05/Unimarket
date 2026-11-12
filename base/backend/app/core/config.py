@@ -14,6 +14,8 @@ class Settings(BaseSettings):
 
     JWT_SECRET_KEY: str = ""
     JWT_EXPIRE_MINUTES: int = 60
+    
+    SECRET_KEY: str
 
     @property
     def database_url(self):
