@@ -1,37 +1,36 @@
-
 from contextlib import asynccontextmanager
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
 from app import models
 from app.core.config import settings
 from app.db.session import Base, engine
-from app.routers import health, items, auth
+from app.routers import health, items, products, auth
 from app.routers.cart import router as cart_router
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
     yield
-
-
 app = FastAPI(
     title=settings.APP_NAME,
     lifespan=lifespan
 )
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origin_list,
     allow_methods=["*"],
     allow_headers=["*"]
 )
-
+# API kiểm tra và sản phẩm mẫu
 app.include_router(health.router, prefix="/api")
 app.include_router(items.router, prefix="/api")
+
+# API sản phẩm
+app.include_router(products.router, prefix="/api")
+
+# API đăng ký, đăng nhập
 app.include_router(auth.router, prefix="/api")
+
+# API giỏ hàng
 app.include_router(cart_router, prefix="/api")
 
 
