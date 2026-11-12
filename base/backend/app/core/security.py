@@ -39,3 +39,22 @@ def create_token(user_id: int) -> str:
     )
 
     return token
+
+from datetime import datetime, timedelta, timezone
+from jose import jwt
+from app.core.config import settings
+
+
+def create_access_token(data: dict):
+    payload = data.copy()
+
+    expire = datetime.now(timezone.utc) + timedelta(minutes=60)
+    payload["exp"] = expire
+
+    token = jwt.encode(
+        payload,
+        settings.SECRET_KEY,
+        algorithm="HS256"
+    )
+
+    return token
