@@ -4,21 +4,24 @@ from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 from app.core.config import settings
 
-# Kết nối đến MySQL
-engine = create_engine(settings.database_url, pool_pre_ping=True)
+# Ket noi MySQL
+engine = create_engine(
+    settings.database_url,
+    pool_pre_ping=True
+)
 
-# Tạo phiên làm việc với database
+# Tao session lam viec voi database
 SessionLocal = sessionmaker(
     bind=engine,
     autoflush=False,
     autocommit=False
 )
 
-# Lớp cha cho tất cả model
+# Lop cha cho cac model
 class Base(DeclarativeBase):
     pass
 
-# Mở và đóng kết nối database
+# Mo va dong session
 def get_db():
     db = SessionLocal()
     try:
