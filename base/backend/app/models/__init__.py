@@ -1,5 +1,10 @@
-# Giữ model mẫu của thầy, bổ sung model UniMarket để Base.metadata nhận diện.
-from app.models.item import Item  # noqa: F401
-from app.models.category import Category  # noqa: F401
-from app.models.product import Product  # noqa: F401
-from app.models.product_image import ProductImage  # noqa: F401
+from app.models.item import Item
+from app.models.user import User
+from app.models.cart import Cart
+from app.models.cart_item import CartItem
+from app.models.order import Order
+from app.models.order_item import OrderItem
+
+from app.models.category import Category
+from app.models.product import Product
+from app.models.product_image import ProductImage
