@@ -1,3 +1,26 @@
+<<<<<<< HEAD
+from sqlalchemy import create_engine
+from sqlalchemy.orm import declarative_base, sessionmaker
+
+from app.core.config import settings
+
+
+engine = create_engine(
+    settings.DATABASE_URL,
+    echo=True
+)
+
+SessionLocal = sessionmaker(
+    autocommit=False,
+    autoflush=False,
+    bind=engine
+)
+
+Base = declarative_base()
+
+
+def get_db():
+=======
 """Kết nối MySQL bằng SQLAlchemy."""
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
@@ -20,8 +43,13 @@ def get_db():
 
     Dùng trong router:  db: Session = Depends(get_db)
     """
+>>>>>>> origin/main
     db = SessionLocal()
     try:
         yield db
     finally:
+<<<<<<< HEAD
         db.close()
+=======
+        db.close()
+>>>>>>> origin/main
