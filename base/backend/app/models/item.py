@@ -1,7 +1,8 @@
 """Model = cấu trúc 1 bảng trong MySQL. Bảng: items."""
 from datetime import datetime
 from decimal import Decimal
-from sqlalchemy import DateTime, Enum, ForeignKey, Numeric, String, Text, func
+
+from sqlalchemy import DateTime, Enum, ForeignKey, Integer, Numeric, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.enum import ProductCondition, ProductStatus
@@ -15,6 +16,7 @@ class Item(Base):
     name: Mapped[str] = mapped_column(String(255))
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     price: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=0)
+    quantity: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
 
     # Tên cột thật là item_condition vì "condition" dễ vướng từ khoá khi viết SQL tay
     condition: Mapped[ProductCondition] = mapped_column(
@@ -24,14 +26,15 @@ class Item(Base):
         Enum(ProductStatus), default=ProductStatus.AVAILABLE
     )
 
-    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime, server_default=func.now(), onupdate=func.now()
-    )
-
-        # Khoá ngoại tới categories. RESTRICT: DB cũng từ chối xoá danh mục còn sản phẩm
+    # RESTRICT: DB cũng từ chối xoá danh mục còn sản phẩm
     category_id: Mapped[int | None] = mapped_column(
         ForeignKey("categories.id", ondelete="RESTRICT"), nullable=True, index=True
     )
 
-    
+    # Xoá mềm: khác NULL nghĩa là đã xoá
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), onupdate=func.now()
+    )

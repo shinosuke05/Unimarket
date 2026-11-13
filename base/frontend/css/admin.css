@@ -64,12 +64,34 @@ th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--bo
 th { color: var(--muted); font-weight: 600; }
 
 .error { color: #dc2626; font-size: 14px; min-height: 20px; }
+.ok { color: #16a34a; font-size: 14px; min-height: 20px; }
 .placeholder { color: var(--muted); text-align: center; padding: 40px 10px; }
 
 /* Màn hình đăng nhập */
 .login-box { max-width: 380px; margin: 10vh auto; padding: 0 16px; }
 .login-box form { display: flex; flex-direction: column; gap: 12px; }
 .login-box input { padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 15px; }
+
+/* Form + nút trong trang quản lý */
+.toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: end; }
+.toolbar + .toolbar { margin-top: 12px; }
+.field { display: flex; flex-direction: column; gap: 4px; flex: 1 1 200px; font-size: 14px; }
+.field label { color: var(--muted); }
+.field input, .field select, .field textarea {
+  padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px;
+  font-size: 15px; font-family: inherit; background: #fff;
+}
+button.btn-secondary { background: #e5e7eb; color: var(--text); border: 0; border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: 14px; }
+button.btn-danger { background: #ef4444; color: #fff; border: 0; border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 13px; }
+button.btn-sm { background: var(--primary); color: #fff; border: 0; border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 13px; }
+button:disabled { opacity: .45; cursor: not-allowed; }
+td.actions { display: flex; gap: 6px; }
+
+/* Nhãn trạng thái sản phẩm */
+.badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; background: #e5e7eb; }
+.badge.AVAILABLE { background: #dcfce7; color: #166534; }
+.badge.SOLD { background: #fee2e2; color: #991b1b; }
+.badge.HIDDEN { background: #fef3c7; color: #92400e; }
 
 /* Responsive: màn hình <= 900px thì sidebar thành menu trượt */
 @media (max-width: 900px) {
@@ -81,14 +103,3 @@ th { color: var(--muted); font-weight: 600; }
   .topbar .user span { display: none; }
   .content { padding: 14px; }
 }
-/* Form + nút trong trang quản lý */
-.toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: end; }
-.field { display: flex; flex-direction: column; gap: 4px; flex: 1 1 200px; font-size: 14px; }
-.field label { color: var(--muted); }
-.field input { padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 15px; }
-button.btn-secondary { background: #e5e7eb; color: var(--text); border: 0; border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: 14px; }
-button.btn-danger { background: #ef4444; color: #fff; border: 0; border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 13px; }
-button.btn-sm { background: var(--primary); color: #fff; border: 0; border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 13px; }
-button:disabled { opacity: .45; cursor: not-allowed; }
-td.actions { display: flex; gap: 6px; }
-.ok { color: #16a34a; font-size: 14px; min-height: 20px; }

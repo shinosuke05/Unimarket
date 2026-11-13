@@ -32,6 +32,12 @@
     if (!res.ok) {
       let detail = "";
       try { detail = (await res.json()).detail; } catch (e) { /* bỏ qua */ }
+      // Lỗi validate 422 của FastAPI: detail là mảng -> gộp thành 1 câu dễ đọc
+      if (Array.isArray(detail)) {
+        detail = detail
+          .map((d) => (d.loc ? d.loc.slice(1).join(".") + ": " : "") + d.msg)
+          .join("; ");
+      }
       if (res.status === 403) { logout(true); }
       throw new Error(typeof detail === "string" && detail ? detail : "Lỗi " + res.status);
     }

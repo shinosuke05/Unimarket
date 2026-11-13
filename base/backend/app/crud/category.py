@@ -1,5 +1,5 @@
 """CRUD cho categories."""
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
 from app.models.category import Category
@@ -8,14 +8,19 @@ from app.schemas.category import CategoryCreate, CategoryUpdate
 
 
 def count_items(db: Session, category_id: int) -> int:
-    return db.scalar(select(func.count()).select_from(Item).where(Item.category_id == category_id)) or 0
+    """Đếm sản phẩm chưa bị xoá mềm của danh mục."""
+    return db.scalar(
+        select(func.count())
+        .select_from(Item)
+        .where(Item.category_id == category_id, Item.deleted_at.is_(None))
+    ) or 0
 
 
 def get_categories(db: Session) -> list[dict]:
-    """Trả về danh sách kèm số sản phẩm của từng danh mục."""
+    """Trả về danh sách kèm số sản phẩm (chưa xoá) của từng danh mục."""
     query = (
         select(Category, func.count(Item.id))
-        .outerjoin(Item, Item.category_id == Category.id)
+        .outerjoin(Item, (Item.category_id == Category.id) & Item.deleted_at.is_(None))
         .group_by(Category.id)
         .order_by(Category.id.desc())
     )
@@ -56,5 +61,11 @@ def update_category(db: Session, cat: Category, data: CategoryUpdate) -> Categor
 
 
 def delete_category(db: Session, cat: Category) -> None:
+    # Sản phẩm đã xoá mềm không còn cần danh mục: gỡ liên kết để khoá ngoại không chặn
+    db.execute(
+        update(Item)
+        .where(Item.category_id == cat.id, Item.deleted_at.is_not(None))
+        .values(category_id=None)
+    )
     db.delete(cat)
     db.commit()

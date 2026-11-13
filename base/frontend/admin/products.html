@@ -9,10 +9,41 @@
 <body data-page="products" data-title="Sản phẩm">
   <main id="content">
     <p class="error" id="err"></p>
+    <p class="ok" id="ok"></p>
+
+    <div class="card">
+      <h3 id="formTitle" style="margin-top:0">Thêm sản phẩm</h3>
+      <div class="toolbar">
+        <div class="field"><label for="name">Tên *</label><input id="name" maxlength="255"></div>
+        <div class="field"><label for="price">Giá (đ) *</label><input id="price" type="number" min="0" step="1000" value="0"></div>
+        <div class="field"><label for="quantity">Tồn kho *</label><input id="quantity" type="number" min="0" step="1" value="1"></div>
+      </div>
+      <div class="toolbar">
+        <div class="field">
+          <label for="condition">Tình trạng</label>
+          <select id="condition">
+            <option value="NEW">Mới</option>
+            <option value="LIKE_NEW">Như mới</option>
+            <option value="GOOD" selected>Còn tốt</option>
+            <option value="FAIR">Đã dùng nhiều</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="category">Danh mục</label>
+          <select id="category"><option value="">-- Không có --</option></select>
+        </div>
+        <div class="field"><label for="description">Mô tả</label><input id="description"></div>
+        <button class="btn" id="saveBtn">Thêm</button>
+        <button class="btn-secondary" id="cancelBtn" style="display:none">Huỷ sửa</button>
+      </div>
+    </div>
+
     <div class="card">
       <div class="table-wrap">
         <table>
-          <thead><tr><th>ID</th><th>Tên</th><th>Giá</th><th>Tình trạng</th><th>Trạng thái</th></tr></thead>
+          <thead>
+            <tr><th>ID</th><th>Tên</th><th>Giá</th><th>Tồn kho</th><th>Tình trạng</th><th>Trạng thái</th><th>Thao tác</th></tr>
+          </thead>
           <tbody id="rows"></tbody>
         </table>
       </div>
@@ -21,22 +52,152 @@
 
   <script src="../js/admin.js"></script>
   <script>
-    document.addEventListener("admin:ready", async () => {
-      try {
-        const items = await AdminApp.api("/items");
-        const tbody = document.getElementById("rows");
-        for (const it of items) {
-          const tr = document.createElement("tr");
-          [it.id, it.name, Number(it.price).toLocaleString("vi-VN") + " đ", it.condition, it.status].forEach((v) => {
-            const td = document.createElement("td");
-            td.textContent = v;   // textContent: tránh XSS
-            tr.appendChild(td);
-          });
-          tbody.appendChild(tr);
-        }
-      } catch (e) {
-        document.getElementById("err").textContent = e.message;
+    const CONDITION = { NEW: "Mới", LIKE_NEW: "Như mới", GOOD: "Còn tốt", FAIR: "Đã dùng nhiều" };
+    const STATUS = { AVAILABLE: "Đang bán", SOLD: "Đã bán", HIDDEN: "Đang ẩn" };
+
+    let items = [];
+    let editingId = null;
+    const $ = (id) => document.getElementById(id);
+    const showError = (m) => { $("err").textContent = m || ""; $("ok").textContent = ""; };
+    const showOk = (m) => { $("ok").textContent = m || ""; $("err").textContent = ""; };
+
+    function btn(cls, text, onClick, disabled) {
+      const b = document.createElement("button");
+      b.className = cls;
+      b.textContent = text;
+      if (disabled) b.disabled = true;
+      b.addEventListener("click", onClick);
+      return b;
+    }
+
+    function resetForm() {
+      editingId = null;
+      $("name").value = ""; $("price").value = "0"; $("quantity").value = "1";
+      $("condition").value = "GOOD"; $("category").value = ""; $("description").value = "";
+      $("formTitle").textContent = "Thêm sản phẩm";
+      $("saveBtn").textContent = "Thêm";
+      $("cancelBtn").style.display = "none";
+    }
+
+    function render() {
+      const tbody = $("rows");
+      tbody.replaceChildren();
+      if (!items.length) {
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 7; td.className = "placeholder"; td.textContent = "Chưa có sản phẩm nào.";
+        tr.appendChild(td); tbody.appendChild(tr);
+        return;
       }
+      for (const it of items) {
+        const tr = document.createElement("tr");
+        [it.id, it.name, Number(it.price).toLocaleString("vi-VN") + " đ", it.quantity,
+         CONDITION[it.condition] || it.condition].forEach((v) => {
+          const td = document.createElement("td");
+          td.textContent = v;   // textContent: tránh XSS
+          tr.appendChild(td);
+        });
+
+        const stTd = document.createElement("td");
+        const badge = document.createElement("span");
+        badge.className = "badge " + it.status;
+        badge.textContent = STATUS[it.status] || it.status;
+        stTd.appendChild(badge);
+        tr.appendChild(stTd);
+
+        const act = document.createElement("td");
+        act.className = "actions";
+        act.append(
+          btn("btn-sm", "Sửa", () => startEdit(it)),
+          it.status === "HIDDEN"
+            ? btn("btn-sm", "Hiện", () => toggle(it, "show"))
+            : btn("btn-secondary", "Ẩn", () => toggle(it, "hide")),
+          btn("btn-danger", "Xoá", () => remove(it))
+        );
+        tr.appendChild(act);
+        tbody.appendChild(tr);
+      }
+    }
+
+    async function load() {
+      try {
+        items = await AdminApp.api("/admin/items");
+        render();
+      } catch (e) { showError(e.message); }
+    }
+
+    async function loadCategories() {
+      try {
+        const cats = await AdminApp.api("/categories");
+        for (const c of cats) {
+          const opt = document.createElement("option");
+          opt.value = c.id; opt.textContent = c.name;
+          $("category").appendChild(opt);
+        }
+      } catch (e) { showError(e.message); }
+    }
+
+    function startEdit(it) {
+      editingId = it.id;
+      $("name").value = it.name; $("price").value = it.price; $("quantity").value = it.quantity;
+      $("condition").value = it.condition; $("category").value = it.category_id ?? "";
+      $("description").value = it.description || "";
+      $("formTitle").textContent = "Sửa sản phẩm #" + it.id;
+      $("saveBtn").textContent = "Lưu";
+      $("cancelBtn").style.display = "";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    async function save() {
+      const name = $("name").value.trim();
+      const price = Number($("price").value);
+      const quantity = Number($("quantity").value);
+      if (!name) return showError("Vui lòng nhập tên sản phẩm");
+      if (!Number.isFinite(price) || price < 0) return showError("Giá phải là số không âm");
+      if (!Number.isInteger(quantity) || quantity < 0) return showError("Tồn kho phải là số nguyên không âm");
+
+      const body = JSON.stringify({
+        name, price, quantity,
+        condition: $("condition").value,
+        category_id: $("category").value ? Number($("category").value) : null,
+        description: $("description").value.trim() || null,
+      });
+      try {
+        if (editingId === null) {
+          await AdminApp.api("/items", { method: "POST", body });
+          showOk("Đã thêm sản phẩm");
+        } else {
+          await AdminApp.api("/items/" + editingId, { method: "PUT", body });
+          showOk("Đã cập nhật sản phẩm");
+        }
+        resetForm();
+        await load();
+      } catch (e) { showError(e.message); }
+    }
+
+    async function toggle(it, action) {
+      try {
+        await AdminApp.api(`/items/${it.id}/${action}`, { method: "PATCH" });
+        showOk(action === "hide" ? "Đã ẩn sản phẩm" : "Đã hiện sản phẩm");
+        await load();
+      } catch (e) { showError(e.message); }
+    }
+
+    async function remove(it) {
+      if (!confirm(`Xoá sản phẩm "${it.name}"?`)) return;
+      try {
+        await AdminApp.api("/items/" + it.id, { method: "DELETE" });
+        showOk("Đã xoá sản phẩm");
+        if (editingId === it.id) resetForm();
+        await load();
+      } catch (e) { showError(e.message); }
+    }
+
+    document.addEventListener("admin:ready", () => {
+      $("saveBtn").addEventListener("click", save);
+      $("cancelBtn").addEventListener("click", () => { resetForm(); showError(""); });
+      loadCategories();
+      load();
     });
   </script>
 </body>
