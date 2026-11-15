@@ -132,3 +132,57 @@ searchInput.addEventListener("input", () => {
 });
 
 loadItems();
+
+// Trong file js/pages/items.js
+function renderItems(items) {
+  if (items.length === 0) {
+    tableBody.innerHTML = `<tr><td colspan="5" class="muted">Chưa có dữ liệu</td></tr>`;
+    return;
+  }
+  tableBody.innerHTML = items.map((item) => `
+    <tr>
+      <td>${item.id}</td>
+      <td>
+        <strong>${escapeHtml(item.name)}</strong>
+        <div class="muted">${escapeHtml(item.description)}</div>
+      </td>
+      <td class="text-right">${formatMoney(item.price)}</td>
+      <td>${formatDateTime(item.created_at)}</td>
+      <td class="actions">
+        <button class="btn btn-small btn-primary" data-action="add-cart" data-id="${item.id}" data-name="${escapeHtml(item.name)}" data-price="${item.price}">Thêm vào giỏ</button>
+        <button class="btn btn-small" data-action="edit" data-id="${item.id}">Sửa</button>
+        <button class="btn btn-small btn-danger" data-action="delete" data-id="${item.id}">Xoá</button>
+      </td>
+    </tr>`).join("");
+}
+
+// Thêm vào phần bắt sự kiện click của tableBody
+tableBody.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-action]");
+  if (!button) return;
+  
+  const action = button.dataset.action;
+  const id = Number(button.dataset.id);
+
+  if (action === "edit") startEdit(id);
+  if (action === "delete") deleteItem(id);
+  
+  // Xử lý Thêm vào giỏ hàng
+  if (action === "add-cart") {
+    const name = button.dataset.name;
+    const price = Number(button.dataset.price);
+    
+    let cart = JSON.parse(localStorage.getItem("cart") || "[]");
+    const existingItem = cart.find(c => c.id === id);
+    
+    if (existingItem) {
+      existingItem.quantity += 1;
+    } else {
+      cart.push({ id, name, price, quantity: 1 });
+    }
+    
+    localStorage.setItem("cart", JSON.stringify(cart));
+    if (window.updateCartBadge) window.updateCartBadge();
+    showToast(`Đã thêm "${name}" vào giỏ`);
+  }
+});

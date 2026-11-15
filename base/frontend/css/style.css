@@ -117,3 +117,50 @@ th { font-size: 13px; color: var(--color-muted); text-transform: uppercase; }
 }
 .toast-success { background: var(--color-success); }
 .toast-error { background: var(--color-danger); }
+
+/* ---------- Giỏ hàng ---------- */
+.cart-badge {
+  background: var(--color-danger);
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: bold;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
+.qty-control {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.qty-value {
+  font-weight: 600;
+  min-width: 20px;
+  text-align: center;
+}
+
+.cart-total {
+  margin-top: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 16px;
+  border-top: 2px solid var(--color-border);
+}
+
+.text-primary {
+  color: var(--color-primary);
+  font-size: 24px;
+}
+
+@media (max-width: 600px) {
+  .cart-total {
+    flex-direction: column;
+    gap: 16px;
+    align-items: flex-start;
+  }
+}
