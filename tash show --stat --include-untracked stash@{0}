@@ -1,0 +1,14 @@
+ base/backend/app/core/config.py       | 46 [32m++++++++++++[m[31m-------[m
+ base/backend/app/core/dependencies.py |  2 [32m+[m[31m-[m
+ base/backend/app/core/security.py     | 60 [32m+++++++++++[m[31m--------------[m
+ base/backend/app/crud/item.py         | 48 [32m++++++++++++++++[m[31m----[m
+ base/backend/app/main.py              |  9 [32m++[m[31m--[m
+ base/backend/app/models/__init__.py   |  8 [32m++[m[31m--[m
+ base/backend/app/models/item.py       | 25 [32m++++++++[m[31m---[m
+ base/backend/app/models/user.py       | 50 [32m+++++[m[31m----------------[m
+ base/backend/app/routers/auth.py      | 84 [32m+++++++++[m[31m--------------------------[m
+ base/backend/app/schemas/auth.py      | 18 [32m+++++[m[31m---[m
+ base/backend/app/schemas/item.py      | 57 [32m+++++++++++++++++[m[31m-------[m
+ base/backend/requirements.txt         |  5 [32m++[m[31m-[m
+ base/backend/sql/init.sql             | 32 [32m+++++++++[m[31m----[m
+ 13 files changed, 242 insertions(+), 202 deletions(-)

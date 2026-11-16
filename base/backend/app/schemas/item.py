@@ -1,7 +1,4 @@
-"""Schema = hình dạng dữ liệu đi vào (request) và đi ra (response) của API.
-
-FastAPI dùng schema để tự kiểm tra dữ liệu: sai kiểu / thiếu trường -> trả lỗi 422.
-"""
+"""Schema dữ liệu vào/ra của API sản phẩm."""
 from datetime import datetime
 from decimal import Decimal
 
@@ -24,6 +21,7 @@ def _clean_name(value: str | None) -> str | None:
 
 class ItemBase(BaseModel):
     name: str = Field(min_length=1, max_length=255, examples=["Giáo trình Giải tích 1"])
+    name: str = Field(min_length=1, max_length=255, examples=["Giáo trình Giải tích 1"])
     description: str | None = Field(default=None, examples=["Mô tả ngắn"])
     price: Decimal = Field(
         default=0, ge=0, le=MAX_PRICE, max_digits=12, decimal_places=2, examples=[45000]
@@ -37,11 +35,11 @@ class ItemBase(BaseModel):
 
 
 class ItemCreate(ItemBase):
-    """Dữ liệu FE gửi lên khi THÊM mới."""
+    """Dữ liệu gửi lên khi THÊM mới."""
 
 
 class ItemUpdate(BaseModel):
-    """Dữ liệu FE gửi lên khi SỬA. Trường nào không gửi thì giữ nguyên."""
+    """Dữ liệu gửi lên khi SỬA. Trường nào không gửi thì giữ nguyên."""
 
     name: str | None = Field(default=None, min_length=1, max_length=255)
     description: str | None = None
@@ -70,6 +68,6 @@ class ItemOut(ItemBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    price: float  # trả về dạng số (45000.0) cho FE dễ dùng
+    price: float
     created_at: datetime
     updated_at: datetime

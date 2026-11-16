@@ -3,8 +3,10 @@ from datetime import datetime
 from decimal import Decimal
 
 from sqlalchemy import DateTime, Enum, ForeignKey, Integer, Numeric, String, Text, func
+from sqlalchemy import DateTime, Enum, ForeignKey, Integer, Numeric, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
+from app.core.enum import ProductCondition, ProductStatus
 from app.core.enum import ProductCondition, ProductStatus
 from app.db.session import Base
 

@@ -5,6 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.enum import ProductStatus
+from app.core.enum import ProductStatus
 from app.models.item import Item
 from app.schemas.item import ItemCreate, ItemUpdate
 
@@ -32,10 +33,18 @@ def get_items(
         query = query.where(Item.status == status)
     if category_id is not None:
         query = query.where(Item.category_id == category_id)
+    if status:
+        query = query.where(Item.status == status)
+    if category_id is not None:
+        query = query.where(Item.category_id == category_id)
     return list(db.scalars(query))
 
 
 def get_item(db: Session, item_id: int) -> Item | None:
+    item = db.get(Item, item_id)
+    if item is None or item.deleted_at is not None:
+        return None
+    return item
     item = db.get(Item, item_id)
     if item is None or item.deleted_at is not None:
         return None
@@ -45,16 +54,17 @@ def get_item(db: Session, item_id: int) -> Item | None:
 def create_item(db: Session, data: ItemCreate) -> Item:
     item = Item(**data.model_dump())
     _normalize(item)
+    _normalize(item)
     db.add(item)
     db.commit()
-    db.refresh(item)  # lấy lại id, created_at... do MySQL sinh ra
+    db.refresh(item)
     return item
 
 
 def update_item(db: Session, item: Item, data: ItemUpdate) -> Item:
-    # exclude_unset: chỉ lấy các trường FE thực sự gửi lên
     for field, value in data.model_dump(exclude_unset=True).items():
         setattr(item, field, value)
+    _normalize(item)
     _normalize(item)
     db.commit()
     db.refresh(item)
@@ -63,11 +73,19 @@ def update_item(db: Session, item: Item, data: ItemUpdate) -> Item:
 
 def set_status(db: Session, item: Item, status: ProductStatus) -> Item:
     item.status = status
+def set_status(db: Session, item: Item, status: ProductStatus) -> Item:
+    item.status = status
     db.commit()
     db.refresh(item)
     return item
 
+    db.refresh(item)
+    return item
 
+
+def soft_delete_item(db: Session, item: Item) -> None:
+    item.deleted_at = datetime.now()
+    db.commit()
 def soft_delete_item(db: Session, item: Item) -> None:
     item.deleted_at = datetime.now()
     db.commit()
