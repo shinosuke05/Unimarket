@@ -9,9 +9,11 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class ItemBase(BaseModel):
-    name: str = Field(min_length=1, max_length=255, examples=["Cơm rang"])
-    description: str | None = Field(default=None, examples=["Mô tả ngắn"])
-    price: Decimal = Field(default=0, ge=0, examples=[45000])
+    name: str = Field(min_length=1, max_length=255)
+    description: str | None = None
+    price: Decimal = Field(default=0, ge=0)
+    stock: int = Field(default=0, ge=0)
+    is_active: bool = True
 
 
 class ItemCreate(ItemBase):
@@ -19,8 +21,11 @@ class ItemCreate(ItemBase):
 
 
 class ItemUpdate(BaseModel):
-    """Dữ liệu FE gửi lên khi SỬA. Trường nào không gửi thì giữ nguyên."""
-
+    name: str | None = Field(default=None, min_length=1, max_length=255)
+    description: str | None = None
+    price: Decimal | None = Field(default=None, ge=0)
+    stock: int | None = Field(default=None, ge=0)
+    is_active: bool | None = None
     name: str | None = Field(default=None, min_length=1, max_length=255)
     description: str | None = None
     price: Decimal | None = Field(default=None, ge=0)
