@@ -29,6 +29,7 @@ def get_categories(db: Session) -> list[dict]:
             "id": c.id,
             "name": c.name,
             "description": c.description,
+            "is_active": c.is_active, 
             "created_at": c.created_at,
             "product_count": total,
         }

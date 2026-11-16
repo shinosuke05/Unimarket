@@ -1,4 +1,3 @@
-"""Dependency dùng chung: lấy user đang đăng nhập, yêu cầu quyền admin."""
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session

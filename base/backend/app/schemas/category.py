@@ -1,11 +1,15 @@
+
+"""Pydantic schema cho danh mục."""
+
 from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
-class CategoryBase(BaseModel):
-    name: str = Field(min_length=1, max_length=100, examples=["Giáo trình"])
-    description: str | None = Field(default=None, examples=["Sách, tài liệu học tập"])
+class CategoryCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+    description: str | None = None
+    is_active: bool = True
 
     @field_validator("name")
     @classmethod
@@ -16,19 +20,17 @@ class CategoryBase(BaseModel):
         return v
 
 
-class CategoryCreate(CategoryBase):
-    pass
-
-
 class CategoryUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=100)
     description: str | None = None
+    is_active: bool | None = None
 
     @field_validator("name")
     @classmethod
     def strip_name(cls, v: str | None) -> str | None:
         if v is None:
             return v
+
         v = v.strip()
         if not v:
             raise ValueError("Tên danh mục không được để trống")
@@ -41,5 +43,6 @@ class CategoryOut(BaseModel):
     id: int
     name: str
     description: str | None = None
+    is_active: bool
     created_at: datetime
     product_count: int = 0
