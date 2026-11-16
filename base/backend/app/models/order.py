@@ -1,9 +1,10 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Numeric, Enum
-from sqlalchemy.orm import relationship
-from datetime import datetime, timezone
 import enum
+from datetime import datetime, timezone
 
-from app.db.database import Base
+from sqlalchemy import Column, DateTime, Enum, ForeignKey, Integer, Numeric, String
+from sqlalchemy.orm import relationship
+
+from app.db.session import Base
 
 
 class ReceivingMethod(str, enum.Enum):
@@ -29,38 +30,15 @@ class Order(Base):
     __tablename__ = "orders"
 
     id = Column(Integer, primary_key=True, index=True)
-
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
 
     recipient = Column(String(100), nullable=False)
     address = Column(String(255), nullable=False)
-
-    receiving_method = Column(
-        Enum(ReceivingMethod),
-        nullable=False
-    )
-
-    payment_method = Column(
-        Enum(PaymentMethod),
-        nullable=False
-    )
-
+    receiving_method = Column(Enum(ReceivingMethod), nullable=False)
+    payment_method = Column(Enum(PaymentMethod), nullable=False)
     total_amount = Column(Numeric(12, 2), nullable=False, default=0)
-
-    status = Column(
-        Enum(OrderStatus),
-        nullable=False,
-        default=OrderStatus.PENDING
-    )
-
-    created_at = Column(
-        DateTime,
-        default=lambda: datetime.now(timezone.utc)
-    )
+    status = Column(Enum(OrderStatus), nullable=False, default=OrderStatus.PENDING)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     user = relationship("User")
-    items = relationship(
-        "OrderItem",
-        back_populates="order",
-        cascade="all, delete-orphan"
-    )
+    items = relationship("OrderItem", back_populates="order", cascade="all, delete-orphan")

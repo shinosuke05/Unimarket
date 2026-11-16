@@ -1,4 +1,6 @@
 
+"""Mã hoá mật khẩu (bcrypt) và tạo/kiểm tra JWT."""
+
 from datetime import datetime, timedelta, timezone
 
 import bcrypt
@@ -6,55 +8,47 @@ import jwt
 
 from app.core.config import settings
 
+
 def hash_password(password: str) -> str:
-    password_bytes = password.encode("utf-8")
-
-    hashed = bcrypt.hashpw(
-        password_bytes,
+    return bcrypt.hashpw(
+        password.encode("utf-8"),
         bcrypt.gensalt()
-    )
+    ).decode("utf-8")
 
-    return hashed.decode("utf-8")
 
-def verify_password(password: str, password_hash: str) -> bool:
+def verify_password(password: str, hashed: str) -> bool:
     return bcrypt.checkpw(
         password.encode("utf-8"),
-        password_hash.encode("utf-8")
+        hashed.encode("utf-8")
     )
 
-def create_token(user_id: int) -> str:
+
+def create_access_token(user_id: int) -> str:
+    if not settings.SECRET_KEY:
+        raise RuntimeError("Chưa đặt SECRET_KEY trong file .env")
+
     expire = datetime.now(timezone.utc) + timedelta(
-        minutes=settings.JWT_EXPIRE_MINUTES
+        minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
     )
 
-    data = {
+    payload = {
         "sub": str(user_id),
         "exp": expire
     }
 
-    token = jwt.encode(
-        data,
-        settings.JWT_SECRET_KEY,
-        algorithm="HS256"
-    )
-
-    return token
-
-from datetime import datetime, timedelta, timezone
-from jose import jwt
-from app.core.config import settings
-
-
-def create_access_token(data: dict):
-    payload = data.copy()
-
-    expire = datetime.now(timezone.utc) + timedelta(minutes=60)
-    payload["exp"] = expire
-
-    token = jwt.encode(
+    return jwt.encode(
         payload,
         settings.SECRET_KEY,
-        algorithm="HS256"
+        algorithm=settings.JWT_ALGORITHM
     )
 
-    return token
+
+def decode_access_token(token: str) -> dict | None:
+    try:
+        return jwt.decode(
+            token,
+            settings.SECRET_KEY,
+            algorithms=[settings.JWT_ALGORITHM]
+        )
+    except jwt.PyJWTError:
+        return None

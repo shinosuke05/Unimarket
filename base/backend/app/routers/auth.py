@@ -1,88 +1,40 @@
+"""Đăng ký, đăng nhập: /api/auth/..."""
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.db.session import get_db
+from app.core.security import create_access_token, verify_password
 from app.crud import user as user_crud
-from app.schemas.auth import RegisterRequest, UserResponse
-from app.core.dependencies import get_current_user
+from app.db.session import get_db
+from app.deps import get_current_user
 from app.models.user import User
-from app.core.security import verify_password, create_access_token
-
+from app.schemas.auth import LoginRequest, RegisterRequest, TokenOut, UserOut
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
-@router.post(
-    "/register",
-    response_model=UserResponse,
-    status_code=status.HTTP_201_CREATED
-)
+
+@router.post("/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
 def register(data: RegisterRequest, db: Session = Depends(get_db)):
-
-    data.email = data.email.lower()
-
-    existing_user = user_crud.get_user_by_email(db, data.email)
-
-    if existing_user:
-        raise HTTPException(
-            status_code=400,
-            detail="Email da duoc dang ky"
-        )
-
+    email = data.email.strip().lower()
+    if user_crud.get_user_by_email(db, email):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email đã được đăng ký")
     try:
-        user = user_crud.create_user(db, data)
+        return user_crud.create_user(db, data)
     except IntegrityError:
         db.rollback()
-        raise HTTPException(
-            status_code=400,
-            detail="Email da duoc dang ky"
-        )
-
-    return user
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email đã được đăng ký")
 
 
-@router.get("/me", response_model=UserResponse)
-def get_my_profile(
-    current_user: User = Depends(get_current_user)
-):
-    return current_user
-
-from pydantic import BaseModel, EmailStr
-
-
-class LoginRequest(BaseModel):
-    email: EmailStr
-    password: str
-
-
-@router.post("/login")
+@router.post("/login", response_model=TokenOut)
 def login(data: LoginRequest, db: Session = Depends(get_db)):
-
-    user = db.query(User).filter(
-        User.email == data.email
-    ).first()
-
-    if not user:
-        raise HTTPException(
-            status_code=401,
-            detail="Email hoac mat khau khong dung"
-        )
-
-    if not verify_password(data.password, user.password_hash):
-        raise HTTPException(
-            status_code=401,
-            detail="Email hoac mat khau khong dung"
-        )
-
+    user = user_crud.get_user_by_email(db, data.email.strip().lower())
+    if user is None or not verify_password(data.password, user.password):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Email hoặc mật khẩu không đúng")
     if not user.is_active:
-        raise HTTPException(
-            status_code=403,
-            detail="Tai khoan da bi khoa"
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Tài khoản đã bị khóa")
+    return TokenOut(access_token=create_access_token(user.id), user=user)
 
-    token = create_access_token({"sub": str(user.id)})
 
-    return {
-        "access_token": token,
-        "token_type": "bearer"
-    }
+@router.get("/me", response_model=UserOut)
+def me(current_user: User = Depends(get_current_user)):
+    return current_user

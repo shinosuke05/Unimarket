@@ -1,21 +1,17 @@
-from sqlalchemy import Column, Integer, ForeignKey, UniqueConstraint
+from sqlalchemy import Column, ForeignKey, Integer, UniqueConstraint
 from sqlalchemy.orm import relationship
-from app.db.database import Base
+
+from app.db.session import Base
 
 
 class CartItem(Base):
     __tablename__ = "cart_items"
+    __table_args__ = (UniqueConstraint("cart_id", "product_id", name="uq_cart_product"),)
 
     id = Column(Integer, primary_key=True, index=True)
-
-    cart_id = Column(Integer, ForeignKey("carts.id"), nullable=False)
-    product_id = Column(Integer, ForeignKey("items.id"), nullable=False)
-
+    cart_id = Column(Integer, ForeignKey("carts.id", ondelete="CASCADE"), nullable=False)
+    product_id = Column(Integer, ForeignKey("items.id", ondelete="CASCADE"), nullable=False)
     quantity = Column(Integer, nullable=False, default=1)
-
-    __table_args__ = (
-        UniqueConstraint("cart_id", "product_id"),
-    )
 
     cart = relationship("Cart", back_populates="items")
     product = relationship("Item")

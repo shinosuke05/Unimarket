@@ -1,9 +1,12 @@
 
+"""Model bảng users."""
+
 from datetime import datetime
 
-from sqlalchemy import String, Boolean, DateTime, Enum, func
+from sqlalchemy import Boolean, DateTime, Enum, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.core.enum import UserRole
 from app.db.session import Base
 
 
@@ -15,11 +18,16 @@ class User(Base):
         autoincrement=True
     )
 
-    full_name: Mapped[str] = mapped_column(String(100))
+    full_name: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False
+    )
 
     email: Mapped[str] = mapped_column(
         String(255),
-        unique=True
+        unique=True,
+        index=True,
+        nullable=False
     )
 
     phone: Mapped[str | None] = mapped_column(
@@ -27,11 +35,14 @@ class User(Base):
         nullable=True
     )
 
-    password_hash: Mapped[str] = mapped_column(String(255))
+    password: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False
+    )
 
-    role: Mapped[str] = mapped_column(
-        Enum("CUSTOMER", "ADMIN"),
-        default="CUSTOMER"
+    role: Mapped[UserRole] = mapped_column(
+        Enum(UserRole),
+        default=UserRole.USER
     )
 
     is_active: Mapped[bool] = mapped_column(
