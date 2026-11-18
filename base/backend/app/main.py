@@ -1,3 +1,4 @@
+from app.routers import customer_orders, admin_orders
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -33,7 +34,8 @@ app.include_router(auth.router, prefix="/api")
 # API giỏ hàng
 app.include_router(cart_router, prefix="/api")
 
-
+app.include_router(customer_orders.router, prefix="/api")
+app.include_router(admin_orders.router, prefix="/api")
 @app.get("/")
 def home():
     return {"message": "UniMarket API is running"}
