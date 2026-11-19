@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
@@ -32,7 +32,7 @@
 
   <footer id="app-footer"></footer>
 
-  <!-- Thứ tự quan trọng: axios -> config -> api -> utils -> layout -> script riêng của trang -->
+  <!-- Thứ tự quan trọng: axios -> config -> api -> utils -> layout -> script riêng của trang 
   <script src="https://cdn.jsdelivr.net/npm/axios@1.7.9/dist/axios.min.js"></script>
   <script src="js/config.js"></script>
   <script src="js/api.js"></script>
@@ -40,4 +40,79 @@
   <script src="js/layout.js"></script>
   <script src="js/pages/home.js"></script>
 </body>
+</html>
+-->
+
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>UniMarket | Mua bán đồ cũ sinh viên</title>
+    <link rel="icon" href="assets/images/logo.svg" />
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+
+  <body data-root="./">
+    <header id="app-header"></header>
+
+    <main class="container homepage">
+      <!-- Banner giới thiệu -->
+      <section class="home-hero">
+        <div class="home-hero-content">
+          <h1>UniMarket - Chợ đồ cũ sinh viên</h1>
+          <p>
+            Khám phá những món đồ chất lượng với giá tiết kiệm. Mua sắm dễ dàng,
+            phù hợp với sinh viên.
+          </p>
+          <a href="#latest-products" class="btn btn-primary">
+            Khám phá sản phẩm
+          </a>
+        </div>
+      </section>
+
+      <!-- Danh mục sản phẩm -->
+      <section class="home-section" id="categories-section">
+        <div class="home-section-header">
+          <h2>Danh mục sản phẩm</h2>
+        </div>
+
+        <div id="category-list" class="home-category-grid">
+          <p class="muted">Đang tải danh mục...</p>
+        </div>
+      </section>
+
+      <!-- Sản phẩm mới nhất -->
+      <section class="home-section" id="latest-products">
+        <div class="home-section-header">
+          <h2>Sản phẩm mới nhất</h2>
+        </div>
+
+        <div id="latest-product-list" class="home-product-grid">
+          <p class="muted">Đang tải sản phẩm...</p>
+        </div>
+      </section>
+
+      <!-- Sản phẩm nổi bật -->
+      <section class="home-section" id="featured-products">
+        <div class="home-section-header">
+          <h2>Sản phẩm nổi bật</h2>
+        </div>
+
+        <div id="featured-product-list" class="home-product-grid">
+          <p class="muted">Đang tải sản phẩm nổi bật...</p>
+        </div>
+      </section>
+    </main>
+
+    <footer id="app-footer"></footer>
+
+    <!-- Thứ tự tải JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.7.9/dist/axios.min.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/layout.js"></script>
+    <script src="js/pages/home.js"></script>
+  </body>
 </html>

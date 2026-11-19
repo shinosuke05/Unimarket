@@ -117,3 +117,239 @@ th { font-size: 13px; color: var(--color-muted); text-transform: uppercase; }
 }
 .toast-success { background: var(--color-success); }
 .toast-error { background: var(--color-danger); }
+
+
+
+/* ==========================================
+   T3C6335 - TRANG CHỦ UNIMARKET
+   ========================================== */
+
+/* Banner giới thiệu */
+.home-hero {
+  background: linear-gradient(135deg, #2563eb, #1e40af);
+  color: white;
+  border-radius: 16px;
+  padding: 65px 40px;
+  margin-bottom: 40px;
+}
+
+.home-hero-content {
+  max-width: 650px;
+}
+
+.home-hero h1 {
+  font-size: 36px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  line-height: 1.3;
+}
+
+.home-hero p {
+  font-size: 17px;
+  margin-bottom: 25px;
+  opacity: 0.95;
+}
+
+.home-hero .btn-primary {
+  display: inline-block;
+  background: white;
+  color: #1d4ed8;
+  border-color: white;
+  text-decoration: none;
+  font-weight: 600;
+  padding: 12px 24px;
+}
+
+.home-hero .btn-primary:hover {
+  background: #eff6ff;
+}
+
+/* Các khu vực trang chủ */
+.home-section {
+  margin-bottom: 45px;
+}
+
+.home-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.home-section-header h2 {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0;
+}
+
+/* Danh mục sản phẩm */
+.home-category-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.home-category-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 25px 15px;
+  text-align: center;
+  text-decoration: none;
+  color: #1f2937;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.home-category-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+}
+
+/* Danh sách sản phẩm */
+.home-product-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 20px;
+}
+
+/* Thẻ sản phẩm */
+.home-product-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.home-product-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* Ảnh sản phẩm */
+.home-product-image {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background: #f3f4f6;
+  overflow: hidden;
+}
+
+.home-product-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.home-no-image {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+}
+
+/* Thông tin sản phẩm */
+.home-product-info {
+  padding: 15px;
+}
+
+.home-product-info h3 {
+  font-size: 16px;
+  margin: 0 0 10px;
+  line-height: 1.4;
+  min-height: 44px;
+  overflow-wrap: anywhere;
+}
+
+.home-condition {
+  display: block;
+  color: #6b7280;
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+
+.home-product-price {
+  color: #dc2626;
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0;
+}
+
+/* ==========================================
+   RESPONSIVE - TABLET
+   ========================================== */
+
+@media (max-width: 900px) {
+  .home-product-grid,
+  .home-category-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .home-hero {
+    padding: 45px 30px;
+  }
+
+  .home-hero h1 {
+    font-size: 30px;
+  }
+}
+
+/* ==========================================
+   RESPONSIVE - ĐIỆN THOẠI
+   ========================================== */
+
+@media (max-width: 600px) {
+  .home-hero {
+    padding: 35px 20px;
+    margin-bottom: 30px;
+    border-radius: 12px;
+  }
+
+  .home-hero h1 {
+    font-size: 25px;
+  }
+
+  .home-hero p {
+    font-size: 15px;
+  }
+
+  .home-section {
+    margin-bottom: 30px;
+  }
+
+  .home-section-header h2 {
+    font-size: 20px;
+  }
+
+  .home-product-grid,
+  .home-category-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .home-product-info {
+    padding: 10px;
+  }
+
+  .home-product-info h3 {
+    font-size: 14px;
+    min-height: 40px;
+  }
+
+  .home-product-price {
+    font-size: 15px;
+  }
+
+  .home-category-card {
+    padding: 18px 10px;
+  }
+}
+
+@media (max-width: 360px) {
+  .home-product-grid,
+  .home-category-grid {
+    grid-template-columns: 1fr;
+  }
+}

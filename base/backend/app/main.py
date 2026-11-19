@@ -6,6 +6,7 @@ from app.core.config import settings
 from app.db.session import Base, engine
 from app.routers import health, items, products, auth
 from app.routers.cart import router as cart_router
+from app.routers import categories
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
@@ -33,6 +34,8 @@ app.include_router(auth.router, prefix="/api")
 # API giỏ hàng
 app.include_router(cart_router, prefix="/api")
 
+# API danh muc san pham
+app.include_router(categories.router, prefix="/api")
 
 @app.get("/")
 def home():
