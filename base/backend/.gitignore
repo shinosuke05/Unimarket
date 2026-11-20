@@ -9,3 +9,6 @@ __pycache__/
 # Virtual environment
 venv/
 .venv/
+
+# Ảnh người dùng tải lên (không đưa lên Git)
+uploads/

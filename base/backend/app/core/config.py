@@ -70,6 +70,16 @@ class Settings(BaseSettings):
             for origin in self.CORS_ORIGINS.split(",")
             if origin.strip()
         ]
+        # Upload ảnh
+    UPLOAD_DIR: str = "uploads"
+    MAX_IMAGE_MB: int = 2
+    MAX_IMAGES_PER_ITEM: int = 5
+
+    @property
+    def upload_path(self):
+        from pathlib import Path
+        # backend/ (cha của thư mục app/) + UPLOAD_DIR
+        return Path(__file__).resolve().parents[2] / self.UPLOAD_DIR
 
 
 settings = Settings()

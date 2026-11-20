@@ -61,6 +61,14 @@ class ItemUpdate(BaseModel):
                 raise ValueError(f"{field} không được để null")
         return self
 
+class ItemImageOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    url: str
+    is_primary: bool
+    sort_order: int
+
 
 class ItemOut(ItemBase):
     """Dữ liệu API trả về cho FE."""
@@ -69,5 +77,6 @@ class ItemOut(ItemBase):
 
     id: int
     price: float
+    images: list[ItemImageOut] = []  
     created_at: datetime
     updated_at: datetime

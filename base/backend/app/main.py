@@ -8,11 +8,12 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.exc import OperationalError
+from fastapi.staticfiles import StaticFiles
 
 from app import models  # noqa: F401 - import để SQLAlchemy biết các bảng
 from app.core.config import settings
 from app.db.session import Base, engine
-from app.routers import admin, auth, categories, health, items
+from app.routers import admin, auth, categories, health, item_images, items
 
 
 @asynccontextmanager
@@ -40,12 +41,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+settings.upload_path.mkdir(parents=True, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=settings.upload_path), name="uploads")
+
 # Mọi API đều bắt đầu bằng /api. Thêm router mới thì include ở đây.
 app.include_router(health.router, prefix="/api")
 app.include_router(auth.router, prefix="/api")
 app.include_router(admin.router, prefix="/api")
 app.include_router(items.router, prefix="/api")
 app.include_router(categories.router, prefix="/api")
+app.include_router(item_images.router, prefix="/api")
 
 @app.get("/")
 def root():

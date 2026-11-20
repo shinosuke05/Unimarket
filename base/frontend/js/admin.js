@@ -2,6 +2,7 @@
  * Lưu ý: chặn ở FE chỉ để giao diện gọn; bảo vệ thật nằm ở BE (require_admin). */
 (function () {
   const API_BASE = "http://127.0.0.1:8000/api"; // đổi khi deploy
+  const FILE_BASE = API_BASE.replace(/\/api$/, "");
   const TOKEN_KEY = "unimarket_token";
   const LOGIN_URL = "login.html";
 
@@ -21,7 +22,9 @@
 
   async function api(path, options = {}) {
     const token = localStorage.getItem(TOKEN_KEY);
-    const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
+    const headers = { ...(options.headers || {}) };
+    // Gửi file (FormData) thì để trình trình duyệt tự đặt Content-Type kèm boundary
+    if (!(options.body instanceof FormData)) headers["Content-Type"] = "application/json";
     if (token) headers.Authorization = "Bearer " + token;
 
     const res = await fetch(API_BASE + path, { ...options, headers });
@@ -102,6 +105,6 @@
     document.dispatchEvent(new CustomEvent("admin:ready", { detail: { user } }));
   }
 
-  window.AdminApp = { api, logout, user: null };
+  window.AdminApp = { api, logout, user: null, fileUrl: (u) => FILE_BASE + u };
   if (document.body.dataset.page) init();
 })();
