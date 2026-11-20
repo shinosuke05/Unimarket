@@ -18,7 +18,7 @@ class ApiError extends Error {
     this.data = data; // nội dung lỗi gốc server trả về
   }
 }
-
+const API_URL = "http://127.0.0.1:8000";
 // Instance axios dùng chung: mọi request tự nối thêm baseURL phía trước
 const http = axios.create({
   baseURL: CONFIG.API_BASE_URL,
@@ -65,3 +65,34 @@ const api = {
   put: (path, body) => http.put(path, body).then((res) => res.data),
   delete: (path) => http.delete(path).then((res) => res.data),
 };
+
+
+
+async function apiRequest(endpoint, options = {}) {
+    try {
+        const response = await fetch(
+            `${API_URL}${endpoint}`,
+            {
+                ...options,
+                headers: {
+                    "Content-Type": "application/json",
+                    ...options.headers
+                }
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(
+                data.detail || "Có lỗi xảy ra"
+            );
+        }
+
+        return data;
+
+    } catch (error) {
+        console.error("API Error:", error);
+        throw error;
+    }
+}

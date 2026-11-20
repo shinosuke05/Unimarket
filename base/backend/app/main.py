@@ -13,7 +13,7 @@ from app import models  # noqa: F401 - import để SQLAlchemy biết các bản
 from app.core.config import settings
 from app.db.session import Base, engine
 from app.routers import health, items, auth, orders
-
+from app.routers import test
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -45,8 +45,11 @@ app.include_router(health.router, prefix="/api")
 app.include_router(items.router, prefix="/api")
 app.include_router(auth.router, prefix="/api")
 app.include_router(orders.router, prefix="/api")
+app.include_router(test.router)
 
 
 @app.get("/")
 def root():
     return {"message": f"{settings.APP_NAME} đang chạy. Xem tài liệu API tại /docs"}
+
+origins = ["http://127.0.0.1:8000", "http://localhost:8000"]

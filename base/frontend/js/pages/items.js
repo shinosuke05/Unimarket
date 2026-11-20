@@ -42,6 +42,9 @@ function renderItems(items) {
       <td class="text-right">${formatMoney(item.price)}</td>
       <td>${formatDateTime(item.created_at)}</td>
       <td class="actions">
+        <button class="btn btn-small btn-primary" data-action="add-cart" data-id="${item.id}" data-name="${escapeHtml(item.name)}" data-price="${item.price}">Thêm vào giỏ</button>
+        <!-- THÊM NÚT MUA NGAY -->
+        <button class="btn btn-small btn-danger" data-action="buy-now" data-id="${item.id}" data-name="${escapeHtml(item.name)}" data-price="${item.price}">Mua ngay</button>
         <button class="btn btn-small" data-action="edit" data-id="${item.id}">Sửa</button>
         <button class="btn btn-small btn-danger" data-action="delete" data-id="${item.id}">Xoá</button>
       </td>
@@ -184,5 +187,46 @@ tableBody.addEventListener("click", (event) => {
     localStorage.setItem("cart", JSON.stringify(cart));
     if (window.updateCartBadge) window.updateCartBadge();
     showToast(`Đã thêm "${name}" vào giỏ`);
+  }
+});
+
+tableBody.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-action]");
+  if (!button) return;
+  
+  const action = button.dataset.action;
+  const id = Number(button.dataset.id);
+
+  if (action === "edit") startEdit(id);
+  if (action === "delete") deleteItem(id);
+  
+  // Xử lý Thêm vào giỏ hàng (giữ nguyên)
+  if (action === "add-cart") {
+    const name = button.dataset.name;
+    const price = Number(button.dataset.price);
+    let cart = JSON.parse(localStorage.getItem("cart") || "[]");
+    const existingItem = cart.find(c => c.id === id);
+    if (existingItem) {
+      existingItem.quantity += 1;
+    } else {
+      cart.push({ id, name, price, quantity: 1 });
+    }
+    localStorage.setItem("cart", JSON.stringify(cart));
+    if (window.updateCartBadge) window.updateCartBadge();
+    showToast(`Đã thêm "${name}" vào giỏ`);
+  }
+
+  // XỬ LÝ MUA NGAY
+  if (action === "buy-now") {
+    const name = button.dataset.name;
+    const price = Number(button.dataset.price);
+    
+    // Tạo giỏ hàng tạm chỉ chứa sản phẩm này
+    const buyNowCart = [{ id, name, price, quantity: 1 }];
+    localStorage.setItem("cart", JSON.stringify(buyNowCart));
+    if (window.updateCartBadge) window.updateCartBadge();
+    
+    // Chuyển thẳng sang trang thanh toán
+    window.location.href = "checkout.html";
   }
 });

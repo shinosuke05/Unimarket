@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đặt hàng | KS25 Base</title>
+    <link rel="icon" href="../assets/images/logo.svg">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+
+<body data-root="../">
+    <header id="app-header"></header>
+
+    <main class="container layout-2col">
+        <!-- Cột trái: Form thông tin -->
+        <section class="card">
+            <h2>Thông tin đặt hàng</h2>
+
+            <form id="checkout-form">
+                <!-- Sổ địa chỉ -->
+                <label for="address-select">Chọn địa chỉ nhận hàng *</label>
+                <select id="address-select" name="address" required
+                    style="width: 100%; padding: 8px 10px; border: 1px solid var(--color-border); border-radius: var(--radius); font: inherit; margin-bottom: 8px;">
+                    <option value="">-- Chọn địa chỉ --</option>
+                    <option value="1">Nguyễn Văn A - 123 Đường Lê Lợi, Q1, TP.HCM - 0901234567</option>
+                    <option value="2">Trần Thị B - 456 Đường Nguyễn Trãi, Q5, TP.HCM - 0987654321</option>
+                </select>
+                <div class="text-right">
+                    <a href="#" class="muted" style="font-size: 13px; text-decoration: underline;">+ Thêm địa chỉ
+                        mới</a>
+                </div>
+
+                <!-- Hình thức nhận hàng -->
+                <label>Hình thức nhận hàng</label>
+                <div class="radio-group">
+                    <label class="radio-item">
+                        <input type="radio" name="shipping" value="delivery" checked>
+                        Giao hàng tận nơi (Phí: 30.000 ₫)
+                    </label>
+                    <label class="radio-item">
+                        <input type="radio" name="shipping" value="pickup">
+                        Nhận tại cửa hàng (Miễn phí)
+                    </label>
+                </div>
+
+                <!-- Phương thức thanh toán -->
+                <label>Phương thức thanh toán</label>
+                <div class="radio-group">
+                    <label class="radio-item">
+                        <input type="radio" name="payment" value="cod" checked>
+                        Thanh toán khi nhận hàng (COD)
+                    </label>
+                    <label class="radio-item">
+                        <input type="radio" name="payment" value="bank">
+                        Chuyển khoản ngân hàng (QR Code)
+                    </label>
+                </div>
+
+                <div class="form-actions" style="margin-top: 24px;">
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Xác nhận Đặt hàng</button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Cột phải: Tóm tắt đơn hàng -->
+        <section class="card">
+            <h2>Tóm tắt đơn hàng</h2>
+            <div id="checkout-summary-items">
+                <!-- Render bằng JS -->
+            </div>
+        </section>
+    </main>
+
+    <footer id="app-footer"></footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.7.9/dist/axios.min.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../js/layout.js"></script>
+    <script src="../js/pages/checkout.js"></script>
+</body>
+
+</html> 

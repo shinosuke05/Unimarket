@@ -164,3 +164,49 @@ th { font-size: 13px; color: var(--color-muted); text-transform: uppercase; }
     align-items: flex-start;
   }
 }
+/* ---------- Trang Thanh toán (Checkout) ---------- */
+.radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+}
+.radio-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: normal;
+  margin: 0;
+  cursor: pointer;
+}
+.radio-item input[type="radio"] {
+  width: auto;
+  margin: 0;
+}
+.summary-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+.summary-total {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border);
+  font-weight: bold;
+  font-size: 18px;
+}
+
+/* ---------- Trang Kết quả ---------- */
+.result-box {
+  text-align: center;
+  padding: 40px 20px;
+}
+.result-icon {
+  font-size: 64px;
+  margin-bottom: 16px;
+}
+.result-icon.success { color: var(--color-success); }
+.result-icon.error { color: var(--color-danger); }
