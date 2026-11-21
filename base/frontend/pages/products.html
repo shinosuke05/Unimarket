@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Danh sách sản phẩm | UniMarket</title>
+    <link rel="icon" href="../assets/images/logo.svg" />
+    <link rel="stylesheet" href="../css/style.css" />
+  </head>
+  <body data-root="../">
+    <header id="app-header"></header>
+
+    <main class="container products-page">
+      <div class="products-page-heading">
+        <h1>Danh sách sản phẩm</h1>
+        <p>Tìm kiếm và lựa chọn sản phẩm phù hợp với bạn.</p>
+      </div>
+
+      <div class="products-layout">
+        <!-- Bộ lọc bên trái -->
+        <aside class="products-sidebar">
+          <h2>Bộ lọc sản phẩm</h2>
+
+          <form id="product-filter-form">
+            <label for="filter-category">Danh mục</label>
+            <select id="filter-category">
+              <option value="">Tất cả danh mục</option>
+            </select>
+
+            <label for="filter-min-price">Giá tối thiểu (VNĐ)</label>
+            <input
+              type="number"
+              id="filter-min-price"
+              min="0"
+              placeholder="Từ"
+            />
+
+            <label for="filter-max-price">Giá tối đa (VNĐ)</label>
+            <input
+              type="number"
+              id="filter-max-price"
+              min="0"
+              placeholder="Đến"
+            />
+
+            <label for="filter-condition">Tình trạng</label>
+            <select id="filter-condition">
+              <option value="">Tất cả tình trạng</option>
+              <option value="99%">99%</option>
+              <option value="90%">90%</option>
+              <option value="80%">80%</option>
+            </select>
+
+            <label class="products-stock-label">
+              <input type="checkbox" id="filter-in-stock" />
+              Chỉ hiển thị sản phẩm còn hàng
+            </label>
+
+            <button type="submit" class="btn">Áp dụng bộ lọc</button>
+
+            <button type="button" id="reset-filters" class="btn btn-secondary">
+              Xóa bộ lọc
+            </button>
+          </form>
+        </aside>
+
+        <!-- Danh sách sản phẩm -->
+        <section class="products-content">
+          <div class="products-toolbar">
+            <form id="product-search-form" role="search">
+              <input
+                type="search"
+                id="product-search"
+                placeholder="Tìm kiếm sản phẩm..."
+                aria-label="Tìm kiếm sản phẩm"
+              />
+              <button type="submit" class="btn">Tìm kiếm</button>
+            </form>
+
+            <div class="products-sort">
+              <label for="product-sort">Sắp xếp</label>
+              <select id="product-sort">
+                <option value="newest">Mới nhất</option>
+                <option value="price_asc">Giá tăng dần</option>
+                <option value="price_desc">Giá giảm dần</option>
+              </select>
+            </div>
+          </div>
+
+          <p id="products-count" class="muted" aria-live="polite"></p>
+
+          <div id="products-message" role="status" aria-live="polite"></div>
+
+          <div id="products-grid" class="products-grid">
+            <!-- JavaScript sẽ hiển thị sản phẩm tại đây -->
+          </div>
+
+          <nav
+            id="products-pagination"
+            class="products-pagination"
+            aria-label="Phân trang sản phẩm"
+          ></nav>
+        </section>
+      </div>
+    </main>
+
+    <footer id="app-footer"></footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../js/layout.js"></script>
+    <script src="../js/pages/products.js"></script>
+  </body>
+</html>
