@@ -323,16 +323,27 @@ detailEl("product-buy-now").addEventListener("click", () => {
   detailAddToCart(true);
 });
 
-detailEl("product-copy-link").addEventListener("click", async () => {
-  try {
-    await navigator.clipboard.writeText(location.href);
-    detailMessage("Đã sao chép liên kết sản phẩm.");
-  } catch {
-    detailMessage("Không thể sao chép liên kết.", true);
-  }
-});
+const contactLinks = {
+  facebook: "", // Điền link Facebook chính thức
+  zalo: "",     // Điền link Zalo chính thức
+};
 
-// Chưa có email liên hệ chính thức nên không hiển thị email mẫu.
-detailEl("product-contact-email").hidden = true;
+function setupContactLink(id, url) {
+  const link = document.getElementById(id);
+  if (!link) return;
+
+  if (url) {
+    link.href = url;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+  } else {
+    link.removeAttribute("href");
+    link.setAttribute("aria-disabled", "true");
+    link.title = "Kênh liên hệ đang được cập nhật";
+  }
+}
+
+setupContactLink("product-contact-facebook", contactLinks.facebook);
+setupContactLink("product-contact-zalo", contactLinks.zalo);
 
 detailInit();
