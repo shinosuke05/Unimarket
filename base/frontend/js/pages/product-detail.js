@@ -347,3 +347,36 @@ setupContactLink("product-contact-facebook", contactLinks.facebook);
 setupContactLink("product-contact-zalo", contactLinks.zalo);
 
 detailInit();
+
+
+
+const quantityInput = document.getElementById("product-quantity-input");
+const quantityMinus = document.getElementById("quantity-minus");
+const quantityPlus = document.getElementById("quantity-plus");
+
+quantityMinus.addEventListener("click", () => {
+  if (quantityInput.disabled) return;
+
+  const current = Number(quantityInput.value) || 1;
+  quantityInput.value = Math.max(1, current - 1);
+});
+
+quantityPlus.addEventListener("click", () => {
+  if (quantityInput.disabled) return;
+
+  const current = Number(quantityInput.value) || 1;
+  const maxStock = Number(detailState.product?.stock) || 1;
+
+  quantityInput.value = Math.min(maxStock, current + 1);
+});
+
+quantityInput.addEventListener("change", () => {
+  if (quantityInput.disabled) return;
+
+  const maxStock = Number(detailState.product?.stock) || 1;
+  const value = Number(quantityInput.value);
+
+  quantityInput.value = Number.isFinite(value)
+    ? Math.max(1, Math.min(maxStock, Math.floor(value)))
+    : 1;
+});

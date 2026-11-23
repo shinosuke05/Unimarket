@@ -623,3 +623,35 @@ th { font-size: 13px; color: var(--color-muted); text-transform: uppercase; }
   filter: brightness(0.92);
   transform: translateY(-2px);
 }
+
+
+
+/* Điều khiển số lượng sản phẩm */
+.quantity-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.quantity-control button {
+  width: 36px;
+  height: 36px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 20px;
+}
+
+.quantity-control button:hover {
+  background: #f1f5f9;
+}
+
+.quantity-control input {
+  width: 65px;
+  height: 36px;
+  text-align: center;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
