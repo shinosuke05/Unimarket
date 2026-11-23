@@ -60,12 +60,13 @@ function renderHomeProduct(product) {
          Tình trạng: ${escapeHomeHtml(product.item_condition)}
        </span>`
     : "";
-
+  const detailUrl = `pages/product-detail.html?id=${encodeURIComponent(product.id)}`;
   return `
-    <article class="home-product-card">
-      <div class="home-product-image">
+    <a href="${detailUrl}" class="home-product-link">
+      <article class="home-product-card">
+        <div class="home-product-image">
         ${imageHtml}
-      </div>
+        </div>
 
       <div class="home-product-info">
         <h3>${escapeHomeHtml(product.name)}</h3>
@@ -77,6 +78,7 @@ function renderHomeProduct(product) {
         </p>
       </div>
     </article>
+</a>
   `;
 }
 
@@ -132,7 +134,7 @@ async function loadHomeCategories() {
     }
 
     container.innerHTML = categories.map(category => `
-      <a href="pages/items.html?category_id=${encodeURIComponent(category.id)}"
+      <a href="pages/products.html?category_id=${encodeURIComponent(category.id)}"
          class="home-category-card">
         <h3>${escapeHomeHtml(category.name)}</h3>
         <p>${escapeHomeHtml(category.description || "")}</p>
