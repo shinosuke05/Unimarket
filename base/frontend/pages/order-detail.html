@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chi tiết đơn hàng | UniMarket</title>
+  <link rel="icon" href="../assets/images/logo.svg">
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body data-root="../">
+  <header id="app-header"></header>
+  <main class="container orders-page">
+    <a class="back-link" href="orders.html">← Quay lại đơn hàng</a>
+    <div id="detail-message" class="status status-loading">Đang tải chi tiết đơn hàng...</div>
+    <div id="order-detail" hidden>
+      <div class="page-heading detail-heading">
+        <div>
+          <p class="eyebrow">CHI TIẾT ĐƠN HÀNG</p>
+          <h1 id="detail-order-code"></h1>
+          <p id="detail-created" class="muted"></p>
+        </div>
+        <span id="detail-status" class="order-status"></span>
+      </div>
+      <section class="card">
+        <h2>Trạng thái đơn hàng</h2>
+        <div id="order-timeline" class="order-timeline"></div>
+      </section>
+      <div class="detail-grid">
+        <section class="card">
+          <h2>Sản phẩm đã đặt</h2>
+          <div id="detail-items"></div>
+          <div class="order-total">
+            <span>Tổng thanh toán</span>
+            <strong id="detail-total"></strong>
+          </div>
+        </section>
+        <section class="card">
+          <h2>Thông tin nhận hàng</h2>
+          <dl class="info-list">
+            <dt>Người nhận</dt><dd id="detail-recipient">—</dd>
+            <dt>Địa chỉ</dt><dd id="detail-address">—</dd>
+            <dt>Hình thức nhận</dt><dd id="detail-receiving">—</dd>
+            <dt>Thanh toán</dt><dd id="detail-payment">—</dd>
+          </dl>
+          <button id="cancel-order" class="btn btn-danger cancel-order" type="button" hidden>Huỷ đơn hàng</button>
+          <p id="cancel-note" class="muted"></p>
+        </section>
+      </div>
+    </div>
+  </main>
+  <footer id="app-footer"></footer>
+  <script src="https://cdn.jsdelivr.net/npm/axios@1.7.9/dist/axios.min.js"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/utils.js"></script>
+  <script src="../js/layout.js"></script>
+  <script src="../js/pages/order-detail.js"></script>
+</body>
+</html>
