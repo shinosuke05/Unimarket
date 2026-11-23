@@ -811,3 +811,28 @@ main.container.products-page {
   outline: 3px solid #93c5fd;
   outline-offset: 3px;
 }
+
+
+
+/* Liên kết sản phẩm tại trang danh sách */
+.products-card-link {
+  display: block;
+  height: 100%;
+  color: inherit;
+  text-decoration: none;
+}
+
+.products-card-link .products-card {
+  height: 100%;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.products-card-link:hover .products-card {
+  transform: translateY(-3px);
+}
+
+.products-card-link:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 3px;
+}
