@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<!-- File: base/frontend/pages/product-detail.html -->
+<!-- Nếu nhóm đã có trang chi tiết sản phẩm, KHÔNG dùng file này: chỉ chép 2 dòng đánh dấu (1) và (2) bên dưới vào trang đó. -->
+<html lang="vi">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Chi tiết sản phẩm · UniMarket</title>
+    <link rel="stylesheet" href="../css/contact.css"> <!-- (1) -->
+</head>
+<body class="cpage">
+<main>
+    <p><a href="../index.html">‹ Trang chủ</a></p>
+    <div id="product" class="card prod"><p class="empty">Đang tải sản phẩm...</p></div>
+    <p class="cmute">Liên hệ cửa hàng để xem hàng hoặc thương lượng:</p>
+    <div data-contact-buttons></div> <!-- (2) nút Gọi / Zalo / Facebook -->
+</main>
+<div id="toast" role="status"></div>
+<script src="../js/contact.js"></script>
+<script>
+    (async () => {
+      const C = window.Contact, box = document.getElementById("product");
+      const id = new URLSearchParams(location.search).get("id");
+      try {
+        if (!id) throw new Error("Thiếu mã sản phẩm (?id=...)");
+        const res = await fetch(C.API_BASE + "/products/" + encodeURIComponent(id));
+        if (!res.ok) throw new Error("Không tìm thấy sản phẩm (HTTP " + res.status + ")");
+        const p = await res.json();
+        box.innerHTML = `<div class="pic" role="img" aria-label="Ảnh sản phẩm">📚</div>
+          <div><h1>${C.esc(p.name)}</h1><div class="price">${Number(p.price).toLocaleString("vi-VN")} ₫</div>
+          ${p.item_condition ? `<p class="cmute">Tình trạng: ${C.esc(p.item_condition)}</p>` : ""}
+          <p>${C.esc(p.description || "")}</p></div>`;
+      } catch (e) { box.innerHTML = `<p class="empty">${C.esc(e.message)}</p>`; }
+    })();
+</script>
+</body>
+</html>

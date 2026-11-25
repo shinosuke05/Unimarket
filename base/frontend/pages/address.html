@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sổ địa chỉ nhận hàng</title>
+  <link rel="icon" href="../assets/images/logo.svg">
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body data-root="../">
+  <header id="app-header"></header>
+
+  <main class="container layout-2col">
+    <section class="card">
+      <h2 id="addr-form-title">Thêm địa chỉ</h2>
+      <form id="address-form">
+        <label for="addr-name">Người nhận *</label>
+        <input id="addr-name" name="recipient_name" type="text" required minlength="2">
+
+        <label for="addr-phone">Số điện thoại *</label>
+        <input id="addr-phone" name="phone" type="text" required minlength="8">
+
+        <label for="addr-street">Địa chỉ *</label>
+        <input id="addr-street" name="street_address" type="text" required minlength="5">
+
+        <label style="display:flex; align-items:center; gap:8px; font-weight:normal;">
+          <input id="addr-default" name="is_default" type="checkbox" style="width:auto;">
+          Đặt làm mặc định
+        </label>
+
+        <div class="form-actions">
+          <button id="addr-submit" type="submit" class="btn btn-primary">Lưu</button>
+          <button id="addr-cancel" type="button" class="btn" hidden>Huỷ</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>Danh sách địa chỉ</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Người nhận</th>
+              <th>Địa chỉ</th>
+              <th>Mặc định</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="address-table-body"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer id="app-footer"></footer>
+  <script src="https://cdn.jsdelivr.net/npm/axios@1.7.9/dist/axios.min.js"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/utils.js"></script>
+  <script src="../js/layout.js"></script>
+  <script src="../js/pages/addresses.js"></script>
+</body>
+</html>
