@@ -1,37 +1,150 @@
-<!DOCTYPE html>
-<!-- File: base/frontend/pages/product-detail.html -->
-<!-- Nếu nhóm đã có trang chi tiết sản phẩm, KHÔNG dùng file này: chỉ chép 2 dòng đánh dấu (1) và (2) bên dưới vào trang đó. -->
+<!doctype html>
 <html lang="vi">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Chi tiết sản phẩm · UniMarket</title>
-    <link rel="stylesheet" href="../css/contact.css"> <!-- (1) -->
-</head>
-<body class="cpage">
-<main>
-    <p><a href="../index.html">‹ Trang chủ</a></p>
-    <div id="product" class="card prod"><p class="empty">Đang tải sản phẩm...</p></div>
-    <p class="cmute">Liên hệ cửa hàng để xem hàng hoặc thương lượng:</p>
-    <div data-contact-buttons></div> <!-- (2) nút Gọi / Zalo / Facebook -->
-</main>
-<div id="toast" role="status"></div>
-<script src="../js/contact.js"></script>
-<script>
-    (async () => {
-      const C = window.Contact, box = document.getElementById("product");
-      const id = new URLSearchParams(location.search).get("id");
-      try {
-        if (!id) throw new Error("Thiếu mã sản phẩm (?id=...)");
-        const res = await fetch(C.API_BASE + "/products/" + encodeURIComponent(id));
-        if (!res.ok) throw new Error("Không tìm thấy sản phẩm (HTTP " + res.status + ")");
-        const p = await res.json();
-        box.innerHTML = `<div class="pic" role="img" aria-label="Ảnh sản phẩm">📚</div>
-          <div><h1>${C.esc(p.name)}</h1><div class="price">${Number(p.price).toLocaleString("vi-VN")} ₫</div>
-          ${p.item_condition ? `<p class="cmute">Tình trạng: ${C.esc(p.item_condition)}</p>` : ""}
-          <p>${C.esc(p.description || "")}</p></div>`;
-      } catch (e) { box.innerHTML = `<p class="empty">${C.esc(e.message)}</p>`; }
-    })();
-</script>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chi tiết sản phẩm | UniMarket</title>
+    <link rel="stylesheet" href="../css/style.css" />
+    <link rel="stylesheet" href="../css/contact.css" />
+  </head>
+  <body data-root="../">
+    <header id="app-header"></header>
+
+    <main class="container product-detail-page">
+      <nav class="product-breadcrumb">
+        <a href="../index.html">Trang chủ</a>
+        <span>/</span>
+        <a href="products.html">Sản phẩm</a>
+        <span>/</span>
+        <span id="breadcrumb-product-name">Chi tiết sản phẩm</span>
+      </nav>
+
+      <div id="product-detail-message" role="status">
+        Đang tải thông tin sản phẩm...
+      </div>
+
+      <div id="product-detail-content" hidden>
+        <section class="product-detail-layout">
+          <!-- Gallery nhiều ảnh -->
+          <div class="product-gallery">
+            <div class="product-gallery-main">
+              <img
+                id="product-main-image"
+                src="../assets/images/logo.svg"
+                alt="Ảnh sản phẩm"
+              />
+            </div>
+            <div
+              id="product-thumbnails"
+              class="product-gallery-thumbnails"
+            ></div>
+          </div>
+
+          <!-- Thông tin sản phẩm -->
+          <div class="product-detail-info">
+            <h1 id="product-detail-name"></h1>
+
+            <div class="product-detail-price" id="product-detail-price"></div>
+
+            <div class="product-detail-meta">
+              <p>
+                <strong>Tình trạng:</strong>
+                <span id="product-detail-condition"></span>
+              </p>
+              <p>
+                <strong>Kho hàng:</strong>
+                <span id="product-detail-stock"></span>
+              </p>
+              <p>
+                <strong>Trạng thái:</strong>
+                <span id="product-detail-status"></span>
+              </p>
+            </div>
+
+            <div class="quantity-control">
+              <button type="button" id="quantity-minus">−</button>
+
+              <input
+                id="product-quantity-input"
+                type="number"
+                min="1"
+                value="1"
+              />
+
+              <button type="button" id="quantity-plus">+</button>
+            </div>
+
+            <div class="product-detail-actions">
+              <button
+                id="product-add-cart"
+                class="btn btn-primary"
+                type="button"
+              >
+                🛒 Thêm vào giỏ
+              </button>
+
+              <button id="product-buy-now" class="btn" type="button">
+                Mua ngay
+              </button>
+            </div>
+
+            <p id="product-action-message" role="status"></p>
+
+            <div class="product-contact">
+              <h3>Liên hệ UniMarket</h3>
+
+              <div class="product-contact-icons">
+                <a
+                  id="product-contact-facebook"
+                  class="contact-social contact-facebook"
+                  href="https://www.facebook.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Facebook"
+                >
+                  <span class="contact-social-icon">f</span>
+                  <span>Facebook</span>
+                </a>
+
+                <a
+                  id="product-contact-zalo"
+                  class="contact-social contact-zalo"
+                  href="https://zalo.me/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Zalo"
+                >
+                  <span class="contact-social-icon">Z</span>
+                  <span>Zalo</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Mô tả -->
+        <section class="product-description-section">
+          <h2>Mô tả sản phẩm</h2>
+          <p id="product-detail-description"></p>
+        </section>
+
+        <!-- Sản phẩm liên quan -->
+        <section class="product-related-section">
+          <h2>Sản phẩm liên quan</h2>
+          <div id="product-related-grid" class="products-grid"></div>
+          <p id="product-related-message"></p>
+        </section>
+      </div>
+    </main>
+
+    <footer id="app-footer"></footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../js/layout.js"></script>
+    <script src="../js/pages/product-detail.js"></script>
+    <script src="../js/contact.js"></script>
+  </body>
 </html>
