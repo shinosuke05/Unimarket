@@ -100,15 +100,22 @@ function renderProductCard(product) {
        </span>`
     : "";
 
+  const detailUrl = `product-detail.html?id=${encodeURIComponent(product.id)}`;
+
   return `
-    <article class="products-card">
-      <div class="products-card-image">${imageHtml}</div>
-      <div class="products-card-info">
-        <h3>${escapeProductHtml(product.name)}</h3>
-        ${condition}
-        <p class="products-card-price">${formatProductPrice(product.price)}</p>
-      </div>
-    </article>
+    <a href="${detailUrl}" class="products-card-link">
+      <article class="products-card">
+        <div class="products-card-image">${imageHtml}</div>
+
+        <div class="products-card-info">
+          <h3>${escapeProductHtml(product.name)}</h3>
+          ${condition}
+          <p class="products-card-price">
+            ${formatProductPrice(product.price)}
+          </p>
+        </div>
+      </article>
+    </a>
   `;
 }
 

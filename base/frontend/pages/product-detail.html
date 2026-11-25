@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Chi tiết sản phẩm | UniMarket</title>
     <link rel="stylesheet" href="../css/style.css" />
+    <link rel="stylesheet" href="../css/contact.css" />
   </head>
   <body data-root="../">
     <header id="app-header"></header>
@@ -62,12 +63,31 @@
 
             <div class="product-quantity">
               <label for="product-quantity-input">Số lượng</label>
-              <input
-                id="product-quantity-input"
-                type="number"
-                min="1"
-                value="1"
-              />
+
+              <div class="quantity-control">
+                <button
+                  type="button"
+                  id="quantity-minus"
+                  aria-label="Giảm số lượng"
+                >
+                  −
+                </button>
+
+                <input
+                  id="product-quantity-input"
+                  type="number"
+                  min="1"
+                  value="1"
+                />
+
+                <button
+                  type="button"
+                  id="quantity-plus"
+                  aria-label="Tăng số lượng"
+                >
+                  +
+                </button>
+              </div>
             </div>
 
             <div class="product-detail-actions">
@@ -141,5 +161,6 @@
     <script src="../js/utils.js"></script>
     <script src="../js/layout.js"></script>
     <script src="../js/pages/product-detail.js"></script>
+    <script src="../js/contact.js"></script>
   </body>
 </html>

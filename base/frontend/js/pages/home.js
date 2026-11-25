@@ -61,22 +61,26 @@ function renderHomeProduct(product) {
        </span>`
     : "";
 
+  const detailUrl = `pages/product-detail.html?id=${encodeURIComponent(product.id)}`;
+
   return `
-    <article class="home-product-card">
-      <div class="home-product-image">
-        ${imageHtml}
-      </div>
+    <a href="${detailUrl}" class="home-product-link">
+      <article class="home-product-card">
+        <div class="home-product-image">
+          ${imageHtml}
+        </div>
 
-      <div class="home-product-info">
-        <h3>${escapeHomeHtml(product.name)}</h3>
+        <div class="home-product-info">
+          <h3>${escapeHomeHtml(product.name)}</h3>
 
-        ${condition}
+          ${condition}
 
-        <p class="home-product-price">
-          ${formatHomePrice(product.price)}
-        </p>
-      </div>
-    </article>
+          <p class="home-product-price">
+            ${formatHomePrice(product.price)}
+          </p>
+        </div>
+      </article>
+    </a>
   `;
 }
 
@@ -241,5 +245,3 @@ function initHomePage() {
 }
 
 initHomePage();
-
-
