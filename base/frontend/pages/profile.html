@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hồ sơ cá nhân</title>
+  <link rel="icon" href="../assets/images/logo.svg">
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body data-root="../">
+  <header id="app-header"></header>
+
+  <main class="container layout-2col">
+    <section class="card">
+      <h2>Thông tin hồ sơ</h2>
+      <form id="profile-form">
+        <label for="profile-email">Email</label>
+        <input id="profile-email" type="email" disabled>
+
+        <label for="profile-name">Họ tên *</label>
+        <input id="profile-name" name="full_name" type="text" required minlength="2">
+
+        <label for="profile-phone">Số điện thoại</label>
+        <input id="profile-phone" name="phone" type="text">
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Lưu hồ sơ</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>Đổi mật khẩu</h2>
+      <form id="password-form">
+        <label for="current-pass">Mật khẩu hiện tại *</label>
+        <input id="current-pass" name="current_password" type="password" required>
+
+        <label for="new-pass">Mật khẩu mới * (8 - 72 ký tự)</label>
+        <input id="new-pass" name="new_password" type="password" required minlength="8" maxlength="72">
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Đổi mật khẩu</button>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <footer id="app-footer"></footer>
+  <script src="https://cdn.jsdelivr.net/npm/axios@1.7.9/dist/axios.min.js"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/utils.js"></script>
+  <script src="../js/layout.js"></script>
+  <script src="../js/pages/profile.js"></script>
+</body>
+</html>

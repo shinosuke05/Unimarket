@@ -4,9 +4,7 @@
 """Đọc cấu hình từ file .env hoặc biến môi trường."""
 
 from urllib.parse import quote_plus
-
-from pydantic_settings import BaseSettings, SettingsConfigDict
-
+from pydantic_settings import BaseSettings,SettingsConfigDict
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -22,7 +20,7 @@ class Settings(BaseSettings):
     DB_HOST: str = "127.0.0.1"
     DB_PORT: int = 3306
     DB_USER: str = "root"
-    DB_PASSWORD: str = ""
+    DB_PASSWORD: str = "123456"
     DB_NAME: str = "app_db"
 
     # CORS
