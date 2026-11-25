@@ -100,15 +100,22 @@ function renderProductCard(product) {
        </span>`
     : "";
 
+  const detailUrl = `product-detail.html?id=${encodeURIComponent(product.id)}`;
+
   return `
-    <article class="products-card">
-      <div class="products-card-image">${imageHtml}</div>
-      <div class="products-card-info">
-        <h3>${escapeProductHtml(product.name)}</h3>
-        ${condition}
-        <p class="products-card-price">${formatProductPrice(product.price)}</p>
-      </div>
-    </article>
+    <a href="${detailUrl}" class="products-card-link">
+      <article class="products-card">
+        <div class="products-card-image">${imageHtml}</div>
+
+        <div class="products-card-info">
+          <h3>${escapeProductHtml(product.name)}</h3>
+          ${condition}
+          <p class="products-card-price">
+            ${formatProductPrice(product.price)}
+          </p>
+        </div>
+      </article>
+    </a>
   `;
 }
 
@@ -136,11 +143,19 @@ async function loadProductCategories() {
 
 let productRequestId = 0;
 
+
 async function loadProducts() {
   const requestId = ++productRequestId;
   const params = getProductParams();
 
-  productMessage.textContent = "Đang tải sản phẩm...";
+  // LOADING
+  productMessage.innerHTML = `
+    <div class="ui-state ui-loading" role="status">
+      <span class="ui-spinner" aria-hidden="true"></span>
+      <span>Đang tải sản phẩm...</span>
+    </div>
+  `;
+
   productGrid.innerHTML = "";
   productCount.textContent = "";
   pagination.innerHTML = "";
@@ -155,37 +170,75 @@ async function loadProducts() {
   if (params.category_id) apiParams.category_id = params.category_id;
   if (params.min_price) apiParams.min_price = params.min_price;
   if (params.max_price) apiParams.max_price = params.max_price;
+
   if (params.item_condition) {
     apiParams.item_condition = params.item_condition;
   }
-  if (params.in_stock === "true") apiParams.in_stock = true;
+
+  if (params.in_stock === "true") {
+    apiParams.in_stock = true;
+  }
 
   try {
     const result = await api.get("/products", apiParams);
+
+    // Bỏ qua phản hồi cũ khi người dùng lọc liên tục
     if (requestId !== productRequestId) return;
 
-    const products = result.products || [];
+    const products = Array.isArray(result.products)
+      ? result.products
+      : [];
+
     const total = Number(result.total) || 0;
     const totalPages = Number(result.total_pages) || 0;
 
-    productMessage.textContent = "";
+    productMessage.innerHTML = "";
 
+    // EMPTY
     if (!products.length) {
-      productMessage.textContent = "Không tìm thấy sản phẩm phù hợp.";
+      productMessage.innerHTML = `
+        <div class="ui-state ui-empty" role="status">
+          <span class="ui-state-icon" aria-hidden="true">📦</span>
+          <strong>Không tìm thấy sản phẩm</strong>
+          <span>Hãy thử từ khóa hoặc bộ lọc khác.</span>
+        </div>
+      `;
       return;
     }
 
+    // SUCCESS
     productCount.textContent = `Tìm thấy ${total} sản phẩm`;
     productGrid.innerHTML = products.map(renderProductCard).join("");
 
     renderProductPagination(params.page, totalPages);
+
   } catch (error) {
     if (requestId !== productRequestId) return;
+
     console.error("Lỗi tải sản phẩm:", error);
-    productMessage.textContent =
-      error.message || "Không thể tải sản phẩm. Vui lòng thử lại.";
+
+    // ERROR
+    productMessage.innerHTML = `
+      <div class="ui-state ui-error" role="alert">
+        <span class="ui-state-icon" aria-hidden="true">⚠️</span>
+        <strong>Không thể tải sản phẩm</strong>
+        <span>Đã xảy ra lỗi khi kết nối máy chủ.</span>
+        <button
+          id="retry-products"
+          class="btn btn-primary"
+          type="button"
+        >
+          Thử lại
+        </button>
+      </div>
+    `;
+
+    document
+      .getElementById("retry-products")
+      .addEventListener("click", loadProducts);
   }
 }
+
 
 function renderProductPagination(currentPage, totalPages) {
   pagination.innerHTML = "";

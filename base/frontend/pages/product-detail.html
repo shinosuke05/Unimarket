@@ -61,17 +61,33 @@
               </p>
             </div>
 
-            <div class="quantity-control">
-              <button type="button" id="quantity-minus">−</button>
+            <div class="product-quantity">
+              <label for="product-quantity-input">Số lượng</label>
 
-              <input
-                id="product-quantity-input"
-                type="number"
-                min="1"
-                value="1"
-              />
+              <div class="quantity-control">
+                <button
+                  type="button"
+                  id="quantity-minus"
+                  aria-label="Giảm số lượng"
+                >
+                  −
+                </button>
 
-              <button type="button" id="quantity-plus">+</button>
+                <input
+                  id="product-quantity-input"
+                  type="number"
+                  min="1"
+                  value="1"
+                />
+
+                <button
+                  type="button"
+                  id="quantity-plus"
+                  aria-label="Tăng số lượng"
+                >
+                  +
+                </button>
+              </div>
             </div>
 
             <div class="product-detail-actions">

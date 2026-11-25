@@ -60,35 +60,78 @@ function renderHomeProduct(product) {
          Tình trạng: ${escapeHomeHtml(product.item_condition)}
        </span>`
     : "";
+
   const detailUrl = `pages/product-detail.html?id=${encodeURIComponent(product.id)}`;
+
   return `
     <a href="${detailUrl}" class="home-product-link">
       <article class="home-product-card">
         <div class="home-product-image">
-        ${imageHtml}
+          ${imageHtml}
         </div>
 
-      <div class="home-product-info">
-        <h3>${escapeHomeHtml(product.name)}</h3>
+        <div class="home-product-info">
+          <h3>${escapeHomeHtml(product.name)}</h3>
 
-        ${condition}
+          ${condition}
 
-        <p class="home-product-price">
-          ${formatHomePrice(product.price)}
-        </p>
-      </div>
-    </article>
-</a>
+          <p class="home-product-price">
+            ${formatHomePrice(product.price)}
+          </p>
+        </div>
+      </article>
+    </a>
   `;
 }
 
-// Lấy sản phẩm mới nhất từ API
+
+/* ===== T3C6383: LOADING / EMPTY / ERROR ===== */
+
+// Hiển thị trạng thái đang tải
+function homeShowLoading(container, message) {
+  container.innerHTML = `
+    <div class="ui-state ui-loading" role="status">
+      <span class="ui-spinner" aria-hidden="true"></span>
+      <span>${escapeHomeHtml(message)}</span>
+    </div>
+  `;
+}
+
+// Hiển thị trạng thái không có dữ liệu
+function homeShowEmpty(container, message) {
+  container.innerHTML = `
+    <div class="ui-state ui-empty" role="status">
+      <span class="ui-state-icon" aria-hidden="true">📦</span>
+      <strong>Chưa có dữ liệu</strong>
+      <span>${escapeHomeHtml(message)}</span>
+    </div>
+  `;
+}
+
+// Hiển thị lỗi và nút thử lại
+function homeShowError(container, message, retryFunction) {
+  container.innerHTML = `
+    <div class="ui-state ui-error" role="alert">
+      <span class="ui-state-icon" aria-hidden="true">⚠️</span>
+      <strong>Không thể tải dữ liệu</strong>
+      <span>${escapeHomeHtml(message)}</span>
+      <button class="btn btn-primary home-retry-btn" type="button">
+        Thử lại
+      </button>
+    </div>
+  `;
+
+  container
+    .querySelector(".home-retry-btn")
+    .addEventListener("click", retryFunction);
+}
+
+// Sản phẩm mới nhất
 async function loadLatestProducts() {
   const container = document.getElementById("latest-product-list");
-
   if (!container) return;
 
-  container.innerHTML = '<p class="muted">Đang tải sản phẩm...</p>';
+  homeShowLoading(container, "Đang tải sản phẩm mới nhất...");
 
   try {
     const result = await api.get("/products", {
@@ -97,45 +140,52 @@ async function loadLatestProducts() {
       sort: "newest"
     });
 
-    const products = result.products || [];
+    const products = Array.isArray(result.products)
+      ? result.products
+      : [];
 
-    if (products.length === 0) {
-      container.innerHTML =
-        '<p class="muted">Hiện chưa có sản phẩm nào.</p>';
+    if (!products.length) {
+      homeShowEmpty(container, "Hiện chưa có sản phẩm nào.");
       return;
     }
 
-    container.innerHTML = products
-      .map(renderHomeProduct)
-      .join("");
-
+    container.innerHTML = products.map(renderHomeProduct).join("");
   } catch (error) {
     console.error("Lỗi tải sản phẩm mới:", error);
-
-    container.textContent =
-      "Không tải được sản phẩm. Vui lòng thử lại sau.";
+    homeShowError(
+      container,
+      "Không tải được sản phẩm mới nhất. Vui lòng thử lại.",
+      loadLatestProducts
+    );
   }
 }
 
-// Danh mục: chờ API danh mục từ Backend
+// Danh mục sản phẩm
 async function loadHomeCategories() {
   const container = document.getElementById("category-list");
   if (!container) return;
 
-  container.innerHTML = '<p class="muted">Đang tải danh mục...</p>';
+  homeShowLoading(container, "Đang tải danh mục...");
 
   try {
-    const categories = await api.get("/categories");
+    const result = await api.get("/categories");
+
+    const categories = Array.isArray(result)
+      ? result
+      : Array.isArray(result.categories)
+        ? result.categories
+        : [];
 
     if (!categories.length) {
-      container.innerHTML =
-        '<p class="muted">Chưa có danh mục sản phẩm.</p>';
+      homeShowEmpty(container, "Chưa có danh mục sản phẩm.");
       return;
     }
 
-    container.innerHTML = categories.map(category => `
-      <a href="pages/products.html?category_id=${encodeURIComponent(category.id)}"
-         class="home-category-card">
+    container.innerHTML = categories.map((category) => `
+      <a
+        href="pages/products.html?category_id=${encodeURIComponent(category.id)}"
+        class="home-category-card"
+      >
         <h3>${escapeHomeHtml(category.name)}</h3>
         <p>${escapeHomeHtml(category.description || "")}</p>
       </a>
@@ -143,18 +193,21 @@ async function loadHomeCategories() {
 
   } catch (error) {
     console.error("Lỗi tải danh mục:", error);
-    container.textContent = "Không tải được danh mục sản phẩm.";
+
+    homeShowError(
+      container,
+      "Không thể tải danh mục sản phẩm. Vui lòng thử lại.",
+      loadHomeCategories
+    );
   }
 }
 
-// Sản phẩm nổi bật: chờ tiêu chí và API từ Backend
-
+// Sản phẩm nổi bật
 async function loadFeaturedProducts() {
   const container = document.getElementById("featured-product-list");
   if (!container) return;
 
-  container.innerHTML =
-    '<p class="muted">Đang tải sản phẩm nổi bật...</p>';
+  homeShowLoading(container, "Đang tải sản phẩm nổi bật...");
 
   try {
     const result = await api.get("/products", {
@@ -163,23 +216,26 @@ async function loadFeaturedProducts() {
       sort: "price_desc"
     });
 
-    const products = result.products || [];
+    const products = Array.isArray(result.products)
+      ? result.products
+      : [];
 
-    if (products.length === 0) {
-      container.innerHTML =
-        '<p class="muted">Chưa có sản phẩm nổi bật.</p>';
+    if (!products.length) {
+      homeShowEmpty(container, "Chưa có sản phẩm nổi bật.");
       return;
     }
 
     container.innerHTML = products.map(renderHomeProduct).join("");
-
   } catch (error) {
     console.error("Lỗi tải sản phẩm nổi bật:", error);
-    container.textContent =
-      "Không tải được sản phẩm nổi bật.";
+
+    homeShowError(
+      container,
+      "Không thể tải sản phẩm nổi bật. Vui lòng thử lại.",
+      loadFeaturedProducts
+    );
   }
 }
-
 
 // Khởi tạo trang chủ
 function initHomePage() {
