@@ -8,10 +8,6 @@ let editingAddressId = null;
 let currentAddresses = [];
 
 async function loadAddresses() {
-  if (!localStorage.getItem("token")) {
-    addressTableBody.innerHTML = `<tr><td colspan="4" class="muted">Vui lòng đăng nhập để xem và lưu địa chỉ</td></tr>`;
-    return;
-  }
   try {
     currentAddresses = await api.get("/addresses");
     renderAddresses(currentAddresses);
@@ -52,10 +48,6 @@ function renderAddresses(list) {
 
 addressForm.addEventListener("submit", async (e) => {
   e.preventDefault();
-  if (!localStorage.getItem("token")) {
-    showToast("Bạn cần đăng nhập trước khi lưu địa chỉ", "error");
-    return;
-  }
   const payload = {
     recipient_name: addressForm.recipient_name.value.trim(),
     phone: addressForm.phone.value.trim(),
@@ -71,7 +63,7 @@ addressForm.addEventListener("submit", async (e) => {
       showToast("Đã sửa địa chỉ");
     }
     resetAddressForm();
-    await loadAddresses();
+    loadAddresses();
   } catch (err) {
     showToast(err.message, "error");
   }

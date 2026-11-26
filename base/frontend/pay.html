@@ -1,55 +1,266 @@
+
 <!DOCTYPE html>
-<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="stylesheet" href="css/style.css"></head>
-<body><main>
-<p><a id="back" href="orders.html">‹ Quay lại đơn hàng</a></p>
-<div id="box"><p class="empty">Đang tải...</p></div>
-</main>
-<script src="js/common.js"></script>
-<script>
-layout("Thanh toán chuyển khoản");
-const id = params.get("id");
-$("#back").href = "order-detail.html?id=" + id;
-let order, shop;
-async function load() {
-  try {
-    [order, shop] = await Promise.all([api("/orders/" + id), api("/store-settings")]);
-    render();
-  } catch (e) { $("#box").innerHTML = `<p class="empty">${esc(e.message)}</p>`; }
-}
-const copyable = (v) => `<span class="copy" title="Bấm để sao chép" style="cursor:pointer" data-copy="${esc(v)}">${esc(v)}</span>`;
-function render() {
-  const st = order.payment ? order.payment.status : "UNPAID";
-  const noInfo = !shop.bank_account_number && !shop.qr_image_url;
-  $("#box").innerHTML = `
-  <h1>Thanh toán đơn ${order.code}</h1>
-  <div class="card row"><span>Trạng thái thanh toán</span>${badge(PAY, st)}</div>
-  ${noInfo ? `<p class="empty">Cửa hàng chưa cập nhật thông tin chuyển khoản. Vui lòng liên hệ ${esc(shop.phone || "cửa hàng")}.</p>` : `
-  <div class="card qr">
-    ${shop.qr_image_url ? `<img src="${esc(shop.qr_image_url)}" alt="Mã QR chuyển khoản">` : ""}
-    <div>
-      <div class="line"><span class="mute">Chủ tài khoản</span><b>${esc(shop.bank_account_holder || "—")}</b></div>
-      <div class="line"><span class="mute">Số tài khoản</span>${copyable(shop.bank_account_number || "—")}</div>
-      <div class="line"><span class="mute">Ngân hàng</span><b>${esc(shop.bank_name || "—")}</b></div>
-      <div class="line"><span class="mute">Số tiền</span>${copyable(Math.round(order.total_amount))} <b>${money(order.total_amount)}</b></div>
-      <div class="line"><span class="mute">Nội dung chuyển khoản</span>${copyable(order.code)}</div>
-      <p class="mute">Nhập đúng nội dung chuyển khoản để cửa hàng đối chiếu nhanh.</p>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Thanh toán UniMarket</title>
+    <link rel="stylesheet" href="css/style.css">
+
+    <style>
+        .payment-container {
+            max-width: 850px;
+            margin: 30px auto;
+            padding: 16px;
+        }
+
+        .payment-card {
+            background: white;
+            border-radius: 12px;
+            padding: 22px;
+            margin: 16px 0;
+            box-shadow: 0 2px 12px #00000010;
+        }
+
+        .payment-content {
+            display: grid;
+            grid-template-columns: minmax(180px, 280px) 1fr;
+            gap: 24px;
+            align-items: center;
+        }
+
+        .payment-qr {
+            width: 100%;
+            max-width: 280px;
+            border-radius: 10px;
+        }
+
+        .payment-line {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            padding: 12px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .copy-value {
+            cursor: pointer;
+            font-weight: bold;
+            text-align: right;
+            overflow-wrap: anywhere;
+        }
+
+        #confirm-transfer {
+            width: 100%;
+            padding: 14px;
+            margin-top: 15px;
+        }
+
+        @media(max-width: 600px) {
+            .payment-content {
+                grid-template-columns: 1fr;
+            }
+
+            .payment-qr {
+                margin: auto;
+            }
+        }
+    </style>
+</head>
+
+<body>
+<main class="payment-container">
+    <a id="back" href="orders.html">← Quay lại đơn hàng</a>
+
+    <div id="box" class="payment-card">
+        Đang tải thông tin thanh toán...
     </div>
-  </div>`}
-  ${st === "UNPAID" ? `<button id="done">Tôi đã chuyển khoản</button>` : ""}
-  ${st === "PENDING_CONFIRMATION" ? `<p class="card">Đã ghi nhận. Cửa hàng sẽ kiểm tra và xác nhận thanh toán của bạn sớm.</p>` : ""}
-  ${st === "PAID" ? `<p class="card">Thanh toán thành công. Cảm ơn bạn!</p>` : ""}
-  <p class="mute">Cần hỗ trợ: ${esc(shop.phone || "")} ${shop.zalo ? "· Zalo " + esc(shop.zalo) : ""} ${shop.facebook_url ? `· <a href="${esc(shop.facebook_url)}" target="_blank" rel="noopener">Facebook</a>` : ""}</p>`;
-  const d = $("#done");
-  if (d) d.onclick = async () => {
-    d.disabled = true;
-    try { order = await post(`/orders/${id}/payment/mark-transferred`); render(); toast("Đã gửi xác nhận chuyển khoản"); }
-    catch (e) { toast(e.message); d.disabled = false; }
-  };
-}
-document.addEventListener("click", (e) => {
-  const v = e.target.dataset?.copy;
-  if (v) navigator.clipboard.writeText(v).then(() => toast("Đã sao chép " + v));
-});
-load();
-</script></body></html>
+</main>
+
+<script src="js/common.js"></script>
+
+<script>
+    layout("Thanh toán chuyển khoản");
+
+    const orderId = params.get("id");
+    const box = document.getElementById("box");
+
+    let order;
+    let shop;
+
+    function copyText(value) {
+        navigator.clipboard.writeText(String(value))
+            .then(() => toast("Đã sao chép"))
+            .catch(() => toast("Không thể sao chép"));
+    }
+
+    function copyRow(label, value) {
+        return `
+            <div class="payment-line">
+                <span>${esc(label)}</span>
+                <b
+                    class="copy-value"
+                    data-copy="${esc(value)}"
+                    title="Bấm để sao chép"
+                >
+                    ${esc(value)}
+                </b>
+            </div>
+        `;
+    }
+
+    function renderPayment() {
+        const paymentStatus = order.payment
+            ? order.payment.status
+            : "UNPAID";
+
+        const orderCode = `DH${order.id}`;
+
+        const noBankInfo =
+            !shop.bank_account_number || !shop.bank_name || !shop.bank_account_holder || !shop.qr_image_url;
+
+        let html = `
+            <h1>Thanh toán đơn ${esc(orderCode)}</h1>
+            <p>Trạng thái: ${esc(PAY[paymentStatus]?.[0] || paymentStatus)}</p>
+            <h2>${money(order.total_amount)}</h2>
+        `;
+
+        if (noBankInfo) {
+            html += `
+                <p class="payment-card">
+                    Cửa hàng chưa cập nhật thông tin ngân hàng.
+                    Vui lòng liên hệ ${esc(shop.phone || "cửa hàng")}.
+                </p>
+            `;
+        } else {
+            html += `
+                <div class="payment-content">
+                    <div>
+                        ${
+                            shop.qr_image_url
+                                ? `<img
+                                    class="payment-qr"
+                                    src="${esc(shop.qr_image_url.startsWith("/uploads/") ? "http://127.0.0.1:8000" + shop.qr_image_url : shop.qr_image_url)}"
+                                    alt="QR thanh toán"
+                                >`
+                                : ""
+                        }
+                    </div>
+
+                    <div>
+                        ${copyRow("Ngân hàng", shop.bank_name || "—")}
+                        ${copyRow("Chủ tài khoản", shop.bank_account_holder || "—")}
+                        ${copyRow("Số tài khoản", shop.bank_account_number || "—")}
+                        ${copyRow("Số tiền", Math.round(Number(order.total_amount)))}
+                        ${copyRow("Nội dung chuyển khoản", orderCode)}
+                    </div>
+                </div>
+            `;
+        }
+
+        if (paymentStatus === "UNPAID" && !noBankInfo && !["CANCELLED", "COMPLETED"].includes(order.status)) {
+            html += `
+                <button id="confirm-transfer">
+                    Tôi đã chuyển khoản
+                </button>
+            `;
+        } else if (paymentStatus === "PENDING_CONFIRMATION") {
+            html += `
+                <p class="payment-card">
+                    Đã ghi nhận yêu cầu. Cửa hàng đang kiểm tra giao dịch.
+                </p>
+            `;
+        } else if (paymentStatus === "PAID") {
+            html += `
+                <p class="payment-card">
+                    Thanh toán thành công. Cảm ơn bạn!
+                </p>
+            `;
+        } else {
+            html += `
+                <p class="payment-card">
+                    Trạng thái thanh toán: ${esc(paymentStatus)}
+                </p>
+            `;
+        }
+
+        html += `
+            <p>
+                Hỗ trợ: ${esc(shop.phone || "")}
+                ${shop.zalo ? " · Zalo " + esc(shop.zalo) : ""}
+            </p>
+        `;
+
+        box.innerHTML = html;
+
+        document.querySelectorAll("[data-copy]").forEach(element => {
+            element.addEventListener("click", () => {
+                copyText(element.dataset.copy);
+            });
+        });
+
+        const confirmButton =
+            document.getElementById("confirm-transfer");
+
+        if (confirmButton) {
+            confirmButton.addEventListener("click", markTransferred);
+        }
+    }
+
+    async function markTransferred() {
+        const button =
+            document.getElementById("confirm-transfer");
+
+        if (!confirm("Bạn xác nhận đã chuyển khoản cho đơn này?")) {
+            return;
+        }
+
+        button.disabled = true;
+
+        try {
+            await post(
+                `/customer/orders/${orderId}/payment/mark-transferred`
+            );
+
+            toast("Đã gửi yêu cầu xác nhận thanh toán");
+
+            await loadPayment();
+        } catch (error) {
+            toast(error.message);
+            button.disabled = false;
+        }
+    }
+
+    async function loadPayment() {
+        if (!orderId || !/^\d+$/.test(orderId)) {
+            box.textContent = "Mã đơn hàng không hợp lệ.";
+            return;
+        }
+
+        try {
+            [order, shop] = await Promise.all([
+                api(`/customer/orders/${orderId}`),
+                api("/store-settings"),
+            ]);
+
+            if (order.payment_method !== "BANK_TRANSFER") {
+                box.textContent =
+                    "Đơn hàng này không sử dụng phương thức chuyển khoản.";
+                return;
+            }
+
+            document.getElementById("back").href =
+                `pages/order-detail.html?id=${encodeURIComponent(orderId)}`;
+
+            renderPayment();
+
+        } catch (error) {
+            box.textContent = error.message;
+        }
+    }
+
+    if (!localStorage.getItem("token")) location.href = "pages/auth.html";
+    else loadPayment();
+</script>
+</body>
+</html>

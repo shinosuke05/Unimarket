@@ -1,11 +1,8 @@
-# File: backend/app/schemas/store_setting.py  (thư mục: backend/app/schemas/)
 from datetime import datetime
-
 from pydantic import BaseModel, ConfigDict, Field
 
 
 class StoreSettingUpdate(BaseModel):
-    """Trường nào không gửi thì giữ nguyên."""
     qr_image_url: str | None = Field(default=None, max_length=500)
     bank_name: str | None = Field(default=None, max_length=100)
     bank_account_number: str | None = Field(default=None, max_length=50)

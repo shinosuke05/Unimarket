@@ -1,28 +1,32 @@
 
 from fastapi import HTTPException
-from sqlalchemy.orm import Session
 
-from app.models.order import Order
-from app.models.user import User
-from app.services.order_service import customer_cancel
+from app.services.order_service import (
+    customer_cancel,
+    customer_mark_transferred,
+    customer_confirm_received,
+)
 
 
-def cancel_order(
-    db: Session,
-    order: Order,
-    user_id: int
-):
-    user = db.get(User, user_id)
+def cancel_order(db, order, user):
+    if order.user_id != user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="Bạn không có quyền hủy đơn hàng này",
+        )
 
-    if user is None or order.user_id != user_id:
-        return False, "Không có quyền hủy đơn hàng"
+    customer_cancel(db, order, user)
 
-    try:
-        customer_cancel(db, order, user)
+    return True, "Hủy đơn hàng thành công"
 
-        return True, "Hủy đơn hàng thành công"
 
-    except HTTPException as exc:
-        db.rollback()
+def mark_transferred(db, order, user):
+    customer_mark_transferred(db, order, user)
 
-        return False, exc.detail
+    return True, "Đã gửi yêu cầu xác nhận thanh toán"
+
+
+def confirm_received(db, order, user):
+    customer_confirm_received(db, order, user)
+
+    return True, "Xác nhận nhận hàng thành công"

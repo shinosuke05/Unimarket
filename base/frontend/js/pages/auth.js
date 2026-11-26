@@ -13,9 +13,7 @@ loginForm.addEventListener("submit", async (e) => {
     });
     localStorage.setItem("token", res.access_token);
     showToast("Đăng nhập thành công");
-    window.location.href = res.user.role === "ADMIN"
-  ? "../admin/index.html"
-  : "profile.html";
+    window.location.href = "profile.html";
   } catch (err) {
     loginError.textContent = err.message;
   }

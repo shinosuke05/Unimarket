@@ -35,9 +35,6 @@ def _detect_ext(head: bytes) -> str | None:
         return ".jpg"
     if head.startswith(b"\x89PNG\r\n\x1a\n"):
         return ".png"
-    # WEBP: 4 byte "RIFF", 4 byte kích thước, 4 byte "WEBP"
-    if len(head) >= 12 and head[:4] == b"RIFF" and head[8:12] == b"WEBP":
-        return ".webp"
     return None
 
 

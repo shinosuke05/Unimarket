@@ -1,19 +1,117 @@
+
 <!DOCTYPE html>
-<!-- File: base/frontend/pages/admin-contact.html -->
 <html lang="vi">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Admin · Cài đặt liên hệ</title>
-    <link rel="stylesheet" href="../css/contact.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Admin - Quản lý liên hệ | UniMarket</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .contact-admin { max-width: 900px; }
+        .contact-admin .card { padding: 24px; }
+        .contact-admin .form-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 16px;
+        }
+        .contact-admin input { margin-bottom: 8px; }
+        .contact-admin .preview {
+          width: 220px;
+          max-width: 100%;
+          border: 1px solid #ddd;
+          border-radius: 10px;
+          padding: 8px;
+          background: white;
+        }
+        .contact-admin .actions {
+          display: flex;
+          gap: 10px;
+          flex-wrap: wrap;
+          margin-top: 16px;
+        }
+        @media(max-width: 650px) {
+          .contact-admin .form-grid { grid-template-columns: 1fr; }
+        }
+    </style>
 </head>
-<body class="cpage">
-<main>
-    <p><a href="../index.html">‹ Trang chủ</a> · <a href="contact.html">Xem trang Liên hệ</a></p>
-    <div id="app"><p class="empty">Đang tải...</p></div>
+<body data-root="../">
+<header id="app-header"></header>
+
+<main class="container contact-admin">
+    <h1>Quản lý thông tin liên hệ</h1>
+    <p class="muted">Cài đặt thông tin hiển thị trên trang Liên hệ và thanh toán QR.</p>
+
+    <div id="notice" class="status status-loading">Đang tải dữ liệu...</div>
+
+    <form id="contact-form" hidden>
+        <section class="card">
+            <h2>Thông tin liên hệ</h2>
+
+            <div class="form-grid">
+                <div>
+                    <label for="phone">Số điện thoại</label>
+                    <input id="phone" type="tel" placeholder="0912345678">
+                </div>
+                <div>
+                    <label for="zalo">Số điện thoại hoặc link Zalo</label>
+                    <input id="zalo" placeholder="0912345678 hoặc https://zalo.me/...">
+                </div>
+            </div>
+
+            <label for="facebook">Link Facebook</label>
+            <input id="facebook" type="url" placeholder="https://www.facebook.com/...">
+        </section>
+
+        <section class="card">
+            <h2>Thông tin chuyển khoản</h2>
+
+            <div class="form-grid">
+                <div>
+                    <label for="bank">Tên ngân hàng</label>
+                    <input id="bank" placeholder="MB Bank">
+                </div>
+                <div>
+                    <label for="account">Số tài khoản</label>
+                    <input id="account" inputmode="numeric" placeholder="0123456789">
+                </div>
+            </div>
+
+            <label for="holder">Tên chủ tài khoản</label>
+            <input id="holder" placeholder="NGUYEN VAN A">
+
+            <label for="qr">Link ảnh QR</label>
+            <input id="qr" type="url" placeholder="https://...">
+
+            <div class="form-grid">
+                <div>
+                    <label for="bank-code">Mã ngân hàng VietQR</label>
+                    <input id="bank-code" placeholder="MB, VCB, ACB, TCB...">
+                </div>
+                <div>
+                    <label>&nbsp;</label>
+                    <button type="button" class="btn" id="generate-qr">Tạo QR tự động</button>
+                </div>
+            </div>
+
+            <p class="muted">Xem trước mã QR:</p>
+            <img id="qr-preview" class="preview" alt="Xem trước QR" hidden>
+        </section>
+
+        <div class="actions">
+            <button class="btn btn-primary" id="save" type="submit">Lưu cài đặt</button>
+            <button class="btn" id="reload" type="button">Tải lại dữ liệu</button>
+            <a class="btn" href="contact.html">Xem trang liên hệ</a>
+        </div>
+    </form>
 </main>
-<div id="toast" role="status"></div>
-<script src="../js/contact.js"></script>
+
+<footer id="app-footer"></footer>
+
+<script src="https://cdn.jsdelivr.net/npm/axios@1.7.9/dist/axios.min.js"></script>
+<script src="../js/config.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/utils.js"></script>
+<script src="../js/layout.js"></script>
 <script src="../js/pages/admin-contact.js"></script>
 </body>
 </html>

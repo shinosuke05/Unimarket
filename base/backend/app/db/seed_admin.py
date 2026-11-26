@@ -29,7 +29,7 @@ def seed_admin() -> None:
             full_name=settings.ADMIN_NAME,
             email=settings.ADMIN_EMAIL,
             password_hash=hash_password(settings.ADMIN_PASSWORD),
-            role="ADMIN",
+            role=UserRole.ADMIN,
             is_active=True,
         )
         db.add(admin)

@@ -1,245 +1,262 @@
 
+from fastapi import HTTPException
+from sqlalchemy.orm import Session, selectinload
+from sqlalchemy import select
 from datetime import datetime
 
-from fastapi import HTTPException
-from sqlalchemy import select
-from sqlalchemy.orm import Session
-
-from app.core.enum import ProductStatus
-from app.models.item import Item
 from app.models.order import Order, OrderStatus
+from app.models.order_item import OrderItem
 from app.models.order_status_history import OrderStatusHistory
-from app.models.payment import Payment, PaymentMethod, PaymentStatus
-from app.models.user import User
+from app.models.payment import Payment
+from app.models.item import Item
+
+
+def get_value(value):
+    return getattr(value, "value", value)
+
+
+def get_status(value):
+    return str(get_value(value))
+
+
+def add_status_history(
+    db: Session,
+    order: Order,
+    old_status,
+    new_status,
+    changed_by=None,
+    note=None,
+):
+    history = OrderStatusHistory(
+        order_id=order.id,
+        changed_by=changed_by,
+        old_status=get_status(old_status) if old_status else None,
+        new_status=get_status(new_status),
+        note=note,
+    )
+    db.add(history)
+
+
+def lock_order(db: Session, order_id: int):
+    order = (
+        db.query(Order)
+        .options(
+            selectinload(Order.items),
+            selectinload(Order.payment),
+            selectinload(Order.status_histories),
+        )
+        .filter(Order.id == order_id)
+        .populate_existing()
+        .with_for_update()
+        .first()
+    )
+
+    if not order:
+        raise HTTPException(status_code=404, detail="Không tìm thấy đơn hàng")
+
+    return order
+
+
+def restore_stock(db: Session, order: Order):
+    for order_item in order.items:
+        if not order_item.product_id:
+            continue
+
+        item = (
+            db.query(Item)
+            .filter(Item.id == order_item.product_id)
+            .with_for_update()
+            .first()
+        )
+
+        if not item:
+            continue
+
+        item.quantity = (item.quantity or 0) + order_item.quantity
+
+        current_status = get_status(item.status)
+
+        if current_status == "SOLD" and not getattr(item, "deleted_at", None):
+            try:
+                item.status = type(item.status)("AVAILABLE")
+            except (TypeError, ValueError):
+                item.status = "AVAILABLE"
+
+
+def finish_payment(db: Session, order: Order, user=None):
+    method = get_value(order.payment_method)
+
+    if method != "COD":
+        if not order.payment or get_status(order.payment.status) != "PAID":
+            raise HTTPException(
+                status_code=400,
+                detail="Đơn hàng chưa được xác nhận thanh toán",
+            )
+        return
+
+    if not order.payment:
+        order.payment = Payment(
+            order_id=order.id,
+            method="COD",
+            amount=order.total_amount,
+            status="PAID",
+            paid_at=datetime.utcnow(),
+            confirmed_by=getattr(user, "id", None),
+        )
+    else:
+        order.payment.status = "PAID"
+        order.payment.paid_at = datetime.utcnow()
+        if user:
+            order.payment.confirmed_by = user.id
 
 
 ALLOWED_TRANSITIONS = {
-    OrderStatus.PENDING: {
-        OrderStatus.CONFIRMED,
-        OrderStatus.CANCELLED,
-    },
-    OrderStatus.CONFIRMED: {
-        OrderStatus.SHIPPING,
-        OrderStatus.CANCELLED,
-    },
-    OrderStatus.SHIPPING: {
-        OrderStatus.COMPLETED,
-    },
-    OrderStatus.COMPLETED: set(),
-    OrderStatus.CANCELLED: set(),
+    "PENDING": ["CONFIRMED", "CANCELLED"],
+    "CONFIRMED": ["SHIPPING", "CANCELLED"],
+    "SHIPPING": ["COMPLETED"],
+    "COMPLETED": [],
+    "CANCELLED": [],
 }
-
-
-def _lock_order(db: Session, order: Order):
-    locked = db.scalar(
-        select(Order)
-        .where(Order.id == order.id)
-        .with_for_update()
-        .execution_options(populate_existing=True)
-    )
-
-    if locked is None:
-        raise HTTPException(404, "Không tìm thấy đơn hàng")
-
-    db.expire(locked, ["payment", "items"])
-
-    return locked
-
-
-def _restore_stock(db: Session, order: Order):
-    lines = sorted(
-        order.items,
-        key=lambda line: line.product_id or 0
-    )
-
-    for line in lines:
-        if line.product_id is None:
-            continue
-
-        item = db.get(
-            Item,
-            line.product_id,
-            with_for_update=True,
-            populate_existing=True
-        )
-
-        if item is None:
-            continue
-
-        item.quantity += line.quantity
-
-        if (
-            item.status == ProductStatus.SOLD
-            and item.quantity > 0
-            and item.deleted_at is None
-        ):
-            item.status = ProductStatus.AVAILABLE
-
-
-def _finish_payment(order: Order, actor: User):
-    if order.payment_method.value != "COD":
-        if (
-            order.payment is None
-            or order.payment.status != PaymentStatus.PAID
-        ):
-            raise HTTPException(
-                400,
-                "Đơn hàng chưa được xác nhận thanh toán"
-            )
-
-        return
-
-    payment = order.payment
-
-    if payment is None:
-        payment = Payment(
-            method=PaymentMethod.COD.value,
-            amount=order.total_amount
-        )
-        order.payment = payment
-
-    payment.status = PaymentStatus.PAID.value
-    payment.paid_at = datetime.now()
-    payment.confirmed_by = actor.id
 
 
 def change_status(
     db: Session,
     order: Order,
-    new_status: OrderStatus,
-    actor: User,
-    note: str | None = None
-) -> Order:
+    new_status,
+    changed_by=None,
+    note=None,
+):
+    order = lock_order(db, order.id)
+    new_status = get_status(new_status)
+    old_status = get_status(order.status)
 
-    try:
-        order = _lock_order(db, order)
-        new_status = OrderStatus(new_status)
-
-        if actor.role != "ADMIN":
-            if (
-                order.user_id != actor.id
-                or new_status != OrderStatus.CANCELLED
-                or order.status != OrderStatus.PENDING
-            ):
-                raise HTTPException(
-                    403,
-                    "Không có quyền thay đổi trạng thái"
-                )
-
-        old_status = OrderStatus(order.status)
-
-        if new_status not in ALLOWED_TRANSITIONS[old_status]:
-            raise HTTPException(
-                400,
-                "Không thể chuyển sang trạng thái này"
-            )
-
-        if new_status == OrderStatus.CANCELLED:
-            if order.payment and order.payment.status in (
-                PaymentStatus.PAID,
-                PaymentStatus.PENDING_CONFIRMATION
-            ):
-                raise HTTPException(
-                    400,
-                    "Cần xử lý thanh toán trước khi hủy đơn"
-                )
-
-            _restore_stock(db, order)
-
-        elif new_status == OrderStatus.COMPLETED:
-            _finish_payment(order, actor)
-
-        order.status = new_status
-
-        db.add(
-            OrderStatusHistory(
-                order_id=order.id,
-                changed_by=actor.id,
-                old_status=old_status.value,
-                new_status=new_status.value,
-                note=note
-            )
+    if new_status not in ALLOWED_TRANSITIONS:
+        raise HTTPException(
+            status_code=400,
+            detail="Trạng thái đơn hàng không hợp lệ",
         )
 
+    if new_status not in ALLOWED_TRANSITIONS.get(old_status, []):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Không thể chuyển đơn từ {old_status} sang {new_status}",
+        )
+
+    user_id = getattr(changed_by, "id", changed_by)
+    user_role = get_value(getattr(changed_by, "role", None))
+
+    if new_status == "CANCELLED":
+        if user_role != "ADMIN":
+            if not changed_by or getattr(changed_by, "id", None) != order.user_id:
+                raise HTTPException(
+                    status_code=403,
+                    detail="Bạn không có quyền hủy đơn hàng này",
+                )
+
+            if old_status != "PENDING":
+                raise HTTPException(
+                    status_code=400,
+                    detail="Chỉ được hủy đơn khi đang chờ xác nhận",
+                )
+
+        if order.payment:
+            payment_status = get_status(order.payment.status)
+
+            if payment_status in ["PAID", "PENDING_CONFIRMATION"]:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Cần xử lý thanh toán trước khi hủy đơn",
+                )
+
+        restore_stock(db, order)
+
+    if new_status == "COMPLETED":
+        finish_payment(db, order, changed_by)
+
+    order.status = new_status
+
+    add_status_history(
+        db=db,
+        order=order,
+        old_status=old_status,
+        new_status=new_status,
+        changed_by=user_id,
+        note=note,
+    )
+
+    try:
         db.commit()
         db.refresh(order)
-
         return order
-
     except Exception:
         db.rollback()
         raise
 
 
-def customer_cancel(
-    db: Session,
-    order: Order,
-    user: User,
-    reason: str | None = None
-) -> Order:
-
-    note = (
-        f"Khách hủy đơn: {reason}"
-        if reason
-        else "Khách hủy đơn"
-    )
+def customer_cancel(db: Session, order: Order, user):
+    if order.user_id != user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="Bạn không có quyền hủy đơn hàng này",
+        )
 
     return change_status(
-        db,
-        order,
-        OrderStatus.CANCELLED,
-        user,
-        note
+        db=db,
+        order=order,
+        new_status="CANCELLED",
+        changed_by=user,
+        note="Khách hàng hủy đơn hàng",
     )
 
 
 def customer_mark_transferred(
     db: Session,
-    order: Order
-) -> Order:
-
-    try:
-        order = _lock_order(db, order)
-
-        if order.status in (
-            OrderStatus.CANCELLED,
-            OrderStatus.COMPLETED
-        ):
-            raise HTTPException(
-                400,
-                "Đơn hàng không còn được cập nhật"
-            )
-
-        if order.payment_method.value != "BANK_TRANSFER":
-            raise HTTPException(
-                400,
-                "Đơn hàng không sử dụng chuyển khoản"
-            )
-
-        payment = order.payment
-
-        if payment is None:
-            payment = Payment(
-                method=PaymentMethod.QR.value,
-                amount=order.total_amount
-            )
-            order.payment = payment
-
-        if payment.status == PaymentStatus.PAID:
-            raise HTTPException(
-                400,
-                "Đơn hàng đã thanh toán"
-            )
-
-        payment.status = (
-            PaymentStatus.PENDING_CONFIRMATION.value
+    order: Order,
+    user,
+):
+    order = lock_order(db, order.id)
+    if order.user_id != user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="Bạn không có quyền thanh toán đơn hàng này",
         )
 
+    if get_status(order.status) in ["CANCELLED", "COMPLETED"]:
+        raise HTTPException(
+            status_code=400,
+            detail="Đơn hàng không thể thanh toán",
+        )
+
+    if get_value(order.payment_method) != "BANK_TRANSFER":
+        raise HTTPException(
+            status_code=400,
+            detail="Đơn hàng không sử dụng chuyển khoản ngân hàng",
+        )
+
+    if order.payment and get_status(order.payment.status) == "PAID":
+        raise HTTPException(
+            status_code=400,
+            detail="Đơn hàng đã được thanh toán",
+        )
+
+    if not order.payment:
+        order.payment = Payment(
+            order_id=order.id,
+            method="BANK_TRANSFER",
+            amount=order.total_amount,
+            status="PENDING_CONFIRMATION",
+            transfer_note=f"DH{order.id}",
+        )
+    else:
+        order.payment.method = "BANK_TRANSFER"
+        order.payment.amount = order.total_amount
+        order.payment.status = "PENDING_CONFIRMATION"
+        order.payment.transfer_note = f"DH{order.id}"
+
+    try:
         db.commit()
         db.refresh(order)
-
         return order
-
     except Exception:
         db.rollback()
         raise
@@ -248,70 +265,92 @@ def customer_mark_transferred(
 def admin_confirm_payment(
     db: Session,
     order: Order,
-    admin: User
-) -> Order:
+    admin,
+):
+    order = lock_order(db, order.id)
+    if get_value(getattr(admin, "role", None)) != "ADMIN":
+        raise HTTPException(
+            status_code=403,
+            detail="Bạn không có quyền xác nhận thanh toán",
+        )
+
+    if get_status(order.status) == "CANCELLED":
+        raise HTTPException(
+            status_code=400,
+            detail="Đơn hàng đã bị hủy",
+        )
+
+    if not order.payment:
+        raise HTTPException(
+            status_code=404,
+            detail="Không tìm thấy thông tin thanh toán",
+        )
+
+    if get_status(order.payment.status) != "PENDING_CONFIRMATION":
+        raise HTTPException(
+            status_code=400,
+            detail="Thanh toán không ở trạng thái chờ xác nhận",
+        )
+
+    order.payment.status = "PAID"
+    order.payment.confirmed_by = admin.id
+    order.payment.paid_at = datetime.utcnow()
 
     try:
-        if admin.role != "ADMIN":
-            raise HTTPException(403, "Không có quyền")
-
-        order = _lock_order(db, order)
-
-        if order.status == OrderStatus.CANCELLED:
-            raise HTTPException(400, "Đơn hàng đã hủy")
-
-        payment = order.payment
-
-        if (
-            payment is None
-            or payment.status
-            != PaymentStatus.PENDING_CONFIRMATION
-        ):
-            raise HTTPException(
-                400,
-                "Không có thanh toán đang chờ xác nhận"
-            )
-
-        payment.status = PaymentStatus.PAID.value
-        payment.paid_at = datetime.now()
-        payment.confirmed_by = admin.id
-
         db.commit()
         db.refresh(order)
-
         return order
-
     except Exception:
         db.rollback()
         raise
 
 
-def admin_reject_payment(
+def admin_reject_payment(db: Session, order: Order):
+    order = lock_order(db, order.id)
+    if not order.payment:
+        raise HTTPException(
+            status_code=404,
+            detail="Không tìm thấy thông tin thanh toán",
+        )
+
+    if get_status(order.payment.status) != "PENDING_CONFIRMATION":
+        raise HTTPException(
+            status_code=400,
+            detail="Thanh toán không ở trạng thái chờ xác nhận",
+        )
+
+    order.payment.status = "UNPAID"
+
+    try:
+        db.commit()
+        db.refresh(order)
+        return order
+    except Exception:
+        db.rollback()
+        raise
+
+
+def customer_confirm_received(
     db: Session,
-    order: Order
-) -> Order:
+    order: Order,
+    user,
+):
+    if order.user_id != user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="Bạn không có quyền xác nhận đơn hàng này",
+        )
 
-    try:
-        order = _lock_order(db, order)
-        payment = order.payment
+    if get_status(order.status) != "SHIPPING":
+        raise HTTPException(
+            status_code=400,
+            detail="Chỉ xác nhận nhận hàng khi đơn đang giao",
+        )
 
-        if (
-            payment is None
-            or payment.status
-            != PaymentStatus.PENDING_CONFIRMATION
-        ):
-            raise HTTPException(
-                400,
-                "Không có thanh toán đang chờ xác nhận"
-            )
-
-        payment.status = PaymentStatus.UNPAID.value
-
-        db.commit()
-        db.refresh(order)
-
-        return order
-
-    except Exception:
-        db.rollback()
-        raise
+    return change_status(
+        db=db,
+        order=order,
+        new_status="COMPLETED",
+        changed_by=user,
+        note="Khách hàng xác nhận đã nhận hàng",
+    )

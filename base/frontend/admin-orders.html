@@ -1,75 +1,59 @@
+
 <!DOCTYPE html>
-<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-    <link rel="stylesheet" href="css/style.css"></head>
-<body><main>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý đơn hàng - UniMarket</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body data-root="../">
+<header id="app-header"></header>
+
+<main class="container">
     <h1>Quản lý đơn hàng</h1>
-    <div class="card row">
-        <input id="q" placeholder="Mã đơn (DH000012) hoặc SĐT" style="flex:1;min-width:200px">
-        <select id="st"><option value="">Mọi trạng thái</option></select>
-        <button id="go">Tìm</button>
-    </div>
-    <table class="resp"><thead><tr><th>Mã đơn</th><th>Người nhận</th><th>Tổng tiền</th><th>Trạng thái</th><th>Thanh toán</th></tr></thead><tbody id="rows"></tbody></table>
-    <dialog id="dlg"></dialog>
+    <p class="muted">Theo dõi, xác nhận và cập nhật đơn hàng của khách.</p>
+
+    <section class="card">
+        <div class="list-header">
+            <input id="keyword" type="search" placeholder="Tìm mã đơn, tên hoặc số điện thoại">
+            <select id="status">
+                <option value="">Tất cả trạng thái</option>
+                <option value="PENDING">Chờ xác nhận</option>
+                <option value="CONFIRMED">Đã xác nhận</option>
+                <option value="SHIPPING">Đang giao</option>
+                <option value="COMPLETED">Hoàn thành</option>
+                <option value="CANCELLED">Đã hủy</option>
+            </select>
+            <button class="btn btn-primary" id="reload">Tải lại</button>
+        </div>
+        <p id="message" class="status status-loading">Đang tải đơn hàng...</p>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                <tr>
+                    <th>Mã đơn</th>
+                    <th>Khách hàng</th>
+                    <th>Số điện thoại</th>
+                    <th>Tổng tiền</th>
+                    <th>Thanh toán</th>
+                    <th>Trạng thái</th>
+                    <th>Thao tác</th>
+                </tr>
+                </thead>
+                <tbody id="orders"></tbody>
+            </table>
+        </div>
+    </section>
 </main>
-<script src="js/common.js"></script>
-<script>
-    layout("Quản lý đơn hàng");
-    const NEXT = { PENDING: [["CONFIRMED", "Xác nhận đơn"], ["CANCELLED", "Từ chối"]],
-      CONFIRMED: [["SHIPPING", "Bắt đầu giao"], ["CANCELLED", "Huỷ đơn"]], SHIPPING: [["COMPLETED", "Hoàn tất giao dịch"]], COMPLETED: [], CANCELLED: [] };
-    $("#st").innerHTML += Object.entries(STATUS).map(([k, v]) => `<option value="${k}">${v[0]}</option>`).join("");
 
-    async function guard() {
-      try { const me = await api("/auth/me"); if (me.role !== "ADMIN") throw 0; return true; }
-      catch { document.querySelector("main").innerHTML = `<p class="empty">Chỉ quản trị viên mới xem được trang này.</p>`; return false; }
-    }
-    async function load() {
-      const qs = new URLSearchParams();
-      if ($("#q").value.trim()) qs.set("q", $("#q").value.trim());
-      if ($("#st").value) qs.set("status", $("#st").value);
-      try {
-        const list = await api("/admin/orders?" + qs);
-        $("#rows").innerHTML = list.length ? list.map((o) => `
-          <tr class="click" data-id="${o.id}"><td data-l="Mã đơn"><b>${o.code}</b></td>
-          <td data-l="Người nhận">${esc(o.receiver_name)}<br><span class="mute">${esc(o.receiver_phone)}</span></td>
-          <td data-l="Tổng tiền">${money(o.total_amount)}</td><td data-l="Trạng thái">${badge(STATUS, o.status)}</td>
-          <td data-l="Thanh toán"><span class="mute">Xem chi tiết</span></td></tr>`).join("")
-          : `<tr><td colspan="5" class="empty">Không có đơn nào khớp bộ lọc.</td></tr>`;
-      } catch (e) { toast(e.message); }
-    }
-    $("#go").onclick = load;
-    $("#q").onkeydown = (e) => e.key === "Enter" && load();
-    $("#st").onchange = load;
-    $("#rows").onclick = (e) => { const tr = e.target.closest("tr[data-id]"); if (tr) openOrder(tr.dataset.id); };
+<footer id="app-footer"></footer>
 
-    async function openOrder(id) {
-      const o = await api("/admin/orders/" + id);
-      renderDlg(o);
-      if (!$("#dlg").open) $("#dlg").showModal();
-    }
-    function renderDlg(o) {
-      const p = o.payment;
-      $("#dlg").innerHTML = `
-      <div class="row"><h2 style="margin:0">Đơn ${o.code}</h2>${badge(STATUS, o.status)}</div>
-      <p>${esc(o.receiver_name)} · ${esc(o.receiver_phone)}<br><span class="mute">${esc(o.shipping_address)}</span></p>
-      ${o.items.map((i) => `<div class="line"><span>${esc(i.item_name)} ×${i.quantity}</span><span>${money(i.price * i.quantity)}</span></div>`).join("")}
-      <div class="line total"><span>Tổng</span><span>${money(o.total_amount)}</span></div>
-      <h2 style="margin-top:1rem">Thanh toán</h2>
-      <div class="row"><span>${p ? METHOD[p.method] : "Chưa có thanh toán"}</span>${badge(PAY, p ? p.status : "UNPAID")}</div>
-      ${p && p.status === "PENDING_CONFIRMATION" ? `<div class="actions"><button data-pay="confirm">Đã nhận tiền</button><button class="danger" data-pay="reject">Chưa thấy tiền</button></div>` : ""}
-      <h2 style="margin-top:1rem">Đổi trạng thái</h2>
-      <div class="actions">${NEXT[o.status].map(([s, l]) => `<button class="${s === "CANCELLED" ? "danger" : ""}" data-to="${s}">${l}</button>`).join("") || `<span class="mute">Đơn đã kết thúc.</span>`}</div>
-      <h2 style="margin-top:1rem">Lịch sử</h2>
-      <ul class="timeline">${[...o.status_history].reverse().map((h) => `<li>${badge(STATUS, h.new_status)}<div class="mute">${fmtDate(h.created_at)}</div>${h.note ? `<div>${esc(h.note)}</div>` : ""}</li>`).join("")}</ul>
-      <div class="actions"><button class="ghost" onclick="$('#dlg').close()">Đóng</button></div>`;
-      $("#dlg").onclick = async (e) => {
-        const b = e.target; let note = null, req;
-        if (b.dataset.to) {
-          if (b.dataset.to === "CANCELLED") { note = prompt("Lý do từ chối/huỷ:"); if (note === null) return; }
-          req = api(`/admin/orders/${o.id}/status`, { method: "PATCH", body: JSON.stringify({ new_status: b.dataset.to, note: note || null }) });
-        } else if (b.dataset.pay) req = post(`/admin/orders/${o.id}/payment/${b.dataset.pay}`);
-        else return;
-        try { renderDlg(await req); toast("Đã cập nhật"); load(); } catch (err) { toast(err.message); }
-      };
-    }
-    guard().then((ok) => ok && load());
-</script></body></html>
+<script src="https://cdn.jsdelivr.net/npm/axios@1.7.9/dist/axios.min.js"></script>
+<script src="../js/config.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/utils.js"></script>
+<script src="../js/layout.js"></script>
+<script src="../js/pages/admin-orders.js"></script>
+</body>
+</html>

@@ -172,3 +172,14 @@ def mark_transferred(
         db,
         order
     )
+@router.post("/{order_id}/confirm-received")
+def confirm_received(
+    order=Depends(get_my_order_or_404),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    return order_service.customer_confirm_received(
+        db,
+        order,
+        current_user
+    )
