@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+    <link rel="stylesheet" href="css/style.css"></head>
+<body><main>
+    <p><a href="orders.html">‹ Đơn hàng của tôi</a></p>
+    <div id="box"><p class="empty">Đang tải...</p></div>
+</main>
+<script src="js/common.js"></script>
+<script>
+    layout("Chi tiết đơn hàng");
+    const id = params.get("id");
+    async function load() {
+      try { render(await api("/orders/" + id)); }
+      catch (e) { $("#box").innerHTML = `<p class="empty">${esc(e.message)}</p>`; }
+    }
+    function render(o) {
+      const p = o.payment;
+      const needPay = o.status !== "CANCELLED" && (!p || (p.method !== "COD" && p.status !== "PAID"));
+      $("#box").innerHTML = `
+      <div class="card row"><div><h1 style="margin:0">Đơn ${o.code}</h1><span class="mute">Đặt lúc ${fmtDate(o.created_at)}</span></div>${badge(STATUS, o.status)}</div>
+      <div class="card"><h2>Sản phẩm</h2>
+        ${o.items.map((i) => `<div class="line"><span>${esc(i.item_name)} ×${i.quantity}</span><span>${money(i.price * i.quantity)}</span></div>`).join("")}
+        <div class="line total"><span>Tổng cộng</span><span>${money(o.total_amount)}</span></div></div>
+      <div class="card"><h2>Giao tới</h2><div>${esc(o.receiver_name)} · ${esc(o.receiver_phone)}</div>
+        <div class="mute">${esc(o.shipping_address)}</div>${o.note ? `<div class="mute">Ghi chú: ${esc(o.note)}</div>` : ""}</div>
+      <div class="card"><h2>Thanh toán</h2>
+        <div class="row"><span>${p ? METHOD[p.method] : "Chưa chọn phương thức"}</span>${p ? badge(PAY, p.status) : badge(PAY, "UNPAID")}</div>
+        ${needPay ? `<div class="actions"><a class="btn" href="pay.html?id=${o.id}">Thanh toán bằng QR</a></div>` : ""}</div>
+      <div class="card"><h2>Tiến trình đơn hàng</h2>
+        <ul class="timeline">${[...o.status_history].reverse().map((h) => `
+          <li>${badge(STATUS, h.new_status)}<div class="mute">${fmtDate(h.created_at)}</div>${h.note ? `<div>${esc(h.note)}</div>` : ""}</li>`).join("") || `<li class="mute">Chưa có lịch sử</li>`}
+        </ul></div>
+      ${o.status === "PENDING" ? `<button class="danger" id="cancel">Huỷ đơn</button>` : `<p class="mute">Đơn đã xác nhận nên không thể tự huỷ. Hãy liên hệ cửa hàng nếu cần.</p>`}`;
+      const c = $("#cancel");
+      if (c) c.onclick = async () => {
+        const reason = prompt("Lý do huỷ đơn (có thể bỏ trống):");
+        if (reason === null) return;
+        c.disabled = true;
+        try { render(await post(`/orders/${id}/cancel`, { reason: reason || null })); toast("Đã huỷ đơn"); }
+        catch (e) { toast(e.message); c.disabled = false; }
+      };
+    }
+    load();
+</script></body></html>
