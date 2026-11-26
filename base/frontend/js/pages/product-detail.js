@@ -256,65 +256,110 @@ function detailGetQuantity() {
   return quantity;
 }
 
-function detailGetUserId() {
-  // Chỉ dùng ID từ trạng thái đăng nhập thực tế khi được tích hợp.
-  // Không tự gán user_id=1 vì có thể thêm vào giỏ của người khác.
-  const stored = sessionStorage.getItem("unimarket_user_id");
-  const id = Number(stored);
-  return stored && Number.isSafeInteger(id) && id > 0 ? id : null;
-}
+
+
 
 async function detailAddToCart(buyNow = false) {
-  if (detailState.loadingCart || !detailState.product) return;
+  if (
+    detailState.loadingCart ||
+    !detailState.product
+  ) return;
 
   const product = detailState.product;
+
   if (!detailAvailable(product)) {
-    detailMessage("Sản phẩm đã hết hàng.", true);
+    detailMessage(
+      "Sản phẩm đã hết hàng.",
+      true
+    );
     return;
   }
 
   const quantity = detailGetQuantity();
-  if (quantity === null) return;
 
-  const userId = detailGetUserId();
-
-  if (!userId) {
+  if (
+    !Number.isSafeInteger(quantity) ||
+    quantity < 1 ||
+    quantity > Number(product.stock)
+  ) {
     detailMessage(
-      "Bạn cần đăng nhập để thêm sản phẩm vào giỏ hàng.",
+      "Số lượng sản phẩm không hợp lệ.",
       true
     );
     return;
   }
 
+  // Kiểm tra JWT token.
+  if (!localStorage.getItem("token")) {
+    detailMessage(
+      "Bạn cần đăng nhập trước khi mua hàng.",
+      true
+    );
+
+    window.location.href = "auth.html";
+    return;
+  }
+
+  // Mua ngay: không thay đổi giỏ hàng.
+  if (buyNow) {
+    if (quantity > 999) {
+      detailMessage(
+        "Số lượng mua ngay tối đa là 999.",
+        true
+      );
+      return;
+    }
+
+    const params = new URLSearchParams({
+      mode: "buy-now",
+      item_id: String(product.id),
+      quantity: String(quantity)
+    });
+
+    window.location.href =
+      `checkout.html?${params.toString()}`;
+
+    return;
+  }
+
+  // Thêm sản phẩm vào giỏ hàng.
   detailState.loadingCart = true;
+
   detailEl("product-add-cart").disabled = true;
   detailEl("product-buy-now").disabled = true;
 
   try {
-    await api.post(
-      `/cart/items?user_id=${encodeURIComponent(userId)}`,
-      { product_id: product.id, quantity }
+    await api.post("/cart/items", {
+      product_id: Number(product.id),
+      quantity: quantity
+    });
+
+    detailMessage(
+      "Đã thêm sản phẩm vào giỏ hàng."
     );
 
-    detailMessage("Đã thêm sản phẩm vào giỏ hàng.");
-
-    if (buyNow) {
-      // Chỉ chuyển sang giỏ hàng khi trang giỏ hàng đã tồn tại.
-      detailMessage(
-        "Đã thêm vào giỏ. Tiếp tục thanh toán tại trang giỏ hàng."
-      );
+    if (window.updateCartBadge) {
+      window.updateCartBadge();
     }
+
   } catch (error) {
     detailMessage(
-      error.message || "Không thể thêm sản phẩm vào giỏ.",
+      error.message ||
+      "Không thể thêm sản phẩm vào giỏ hàng.",
       true
     );
+
   } finally {
     detailState.loadingCart = false;
-    detailEl("product-add-cart").disabled = !detailAvailable(product);
-    detailEl("product-buy-now").disabled = !detailAvailable(product);
+
+    detailEl("product-add-cart").disabled =
+      !detailAvailable(product);
+
+    detailEl("product-buy-now").disabled =
+      !detailAvailable(product);
   }
 }
+
 
 
 function detailShowState(type, message, retry = null) {

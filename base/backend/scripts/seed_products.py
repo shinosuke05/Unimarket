@@ -8,8 +8,9 @@ from sqlalchemy import select, func
 from app import models  # noqa: F401 - nạp tất cả model
 from app.db.session import Base, SessionLocal, engine
 from app.models.category import Category
-from app.models.product import Product
-from app.models.product_image import ProductImage
+from app.models.item import Item
+from app.models.item_image import ItemImage
+from app.core.enum import ProductCondition, ProductStatus
 
 # (Danh mục, mô tả, [(tên sản phẩm, giá VND, tình trạng, tồn kho), ...])
 CATALOG = [
@@ -56,47 +57,133 @@ CATALOG = [
 ]
 
 
+
 def main() -> None:
-    # Chỉ tạo bảng chưa có, KHÔNG xóa bảng items và không sửa bảng đã tồn tại.
     Base.metadata.create_all(bind=engine)
+
     created_products = 0
     created_images = 0
+
     with SessionLocal() as db:
         try:
             for cat_name, cat_description, entries in CATALOG:
-                category = db.scalar(select(Category).where(Category.name == cat_name))
+
+                category = db.scalar(
+                    select(Category).where(
+                        Category.name == cat_name
+                    )
+                )
+
                 if category is None:
-                    category = Category(name=cat_name, description=cat_description)
+                    category = Category(
+                        name=cat_name,
+                        description=cat_description
+                    )
+
                     db.add(category)
                     db.flush()
-                for index, (name, price, condition, stock) in enumerate(entries, start=1):
-                    # Seed chỉ thêm sản phẩm chưa có cùng tên trong cùng danh mục.
-                    product = db.scalar(select(Product).where(
-                        Product.category_id == category.id, Product.name == name
-                    ))
-                    if product is None:
-                        product = Product(
-                            category_id=category.id, name=name,
-                            description=f"{name}. Đồ đã qua sử dụng, tình trạng {condition}. Liên hệ cửa hàng để xem thực tế.",
-                            price=Decimal(price), item_condition=condition,
-                            stock=stock, status="available", is_visible=True,
+
+                for name, price, condition, stock in entries:
+
+                    item = db.scalar(
+                        select(Item).where(
+                            Item.category_id == category.id,
+                            Item.name == name
+                        ).order_by(Item.id)
+                    )
+
+                    if item is None:
+
+                        percent = int(
+                            condition.replace("%", "")
                         )
-                        db.add(product)
+
+                        if percent == 100:
+                            item_condition = ProductCondition.NEW
+
+                        elif percent >= 90:
+                            item_condition = ProductCondition.LIKE_NEW
+
+                        elif percent >= 70:
+                            item_condition = ProductCondition.GOOD
+
+                        else:
+                            item_condition = ProductCondition.FAIR
+
+                        item = Item(
+                            category_id=category.id,
+                            name=name,
+                            description=(
+                                f"{name}. Đồ đã qua sử dụng, "
+                                f"tình trạng {condition}. "
+                                "Liên hệ cửa hàng để xem thực tế."
+                            ),
+                            price=Decimal(price),
+                            condition=item_condition,
+                            condition_percent=condition,
+                            quantity=stock,
+                            status=(
+                                ProductStatus.AVAILABLE
+                                if stock > 0
+                                else ProductStatus.SOLD
+                            )
+                        )
+
+                        db.add(item)
                         db.flush()
+
                         created_products += 1
-                    has_image = db.scalar(select(ProductImage.id).where(ProductImage.product_id == product.id).limit(1))
+
+                    # Không khôi phục sản phẩm đã xóa.
+                    if item.deleted_at is not None:
+                        continue
+
+                    has_image = db.scalar(
+                        select(ItemImage.id).where(
+                            ItemImage.item_id == item.id
+                        ).limit(1)
+                    )
+
                     if has_image is None:
-                        # Ảnh minh họa trực tuyến, không phải ảnh thật của món hàng.
-                        # Dùng ảnh cố định theo ID sản phẩm để tải ổn định giữa các lần chạy.
-                        image_url = f"https://picsum.photos/seed/unimarket-{product.id}/800/600"
-                        db.add(ProductImage(product_id=product.id, image_url=image_url,
-                                            is_primary=True, sort_order=0))
+
+                        image_url = (
+                            "https://picsum.photos/seed/"
+                            f"unimarket-{item.id}/800/600"
+                        )
+
+                        db.add(
+                            ItemImage(
+                                item_id=item.id,
+                                url=image_url,
+                                is_primary=True,
+                                sort_order=0
+                            )
+                        )
+
                         created_images += 1
+
             db.commit()
-            total_products = db.scalar(select(func.count()).select_from(Product))
-            total_images = db.scalar(select(func.count()).select_from(ProductImage))
-            print(f"Seed thành công: thêm {created_products} sản phẩm, {created_images} ảnh.")
-            print(f"Toàn database hiện có {total_products} sản phẩm, {total_images} ảnh.")
+
+            total_products = db.scalar(
+                select(func.count()).select_from(Item)
+            )
+
+            total_images = db.scalar(
+                select(func.count()).select_from(ItemImage)
+            )
+
+            print(
+                f"Seed thành công: thêm "
+                f"{created_products} sản phẩm, "
+                f"{created_images} ảnh."
+            )
+
+            print(
+                f"Toàn database hiện có "
+                f"{total_products} items, "
+                f"{total_images} ảnh."
+            )
+
         except Exception:
             db.rollback()
             raise

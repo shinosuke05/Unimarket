@@ -1,9 +1,5 @@
-// Trang Items: ví dụ CRUD đầy đủ gọi sang backend.
-//   Xem danh sách  -> GET    /items?q=...
-//   Thêm           -> POST   /items
-//   Sửa            -> PUT    /items/{id}
-//   Xoá            -> DELETE /items/{id}
-// Làm đề tài: copy file này + pages/items.html rồi đổi "items" thành tài nguyên của nhóm.
+
+"use strict";
 
 const form = document.getElementById("item-form");
 const tableBody = document.getElementById("item-table-body");
@@ -12,63 +8,144 @@ const formTitle = document.getElementById("form-title");
 const submitButton = document.getElementById("btn-submit");
 const cancelButton = document.getElementById("btn-cancel");
 
-let editingId = null; // null = đang thêm mới; có số = đang sửa item đó
+let editingId = null;
+let actionBusy = false;
+let searchTimer;
 
-// ---------- Đọc dữ liệu ----------
+// ==================== DANH SÁCH ====================
+
 async function loadItems() {
-  tableBody.innerHTML = `<tr><td colspan="5" class="muted">Đang tải...</td></tr>`;
+  tableBody.innerHTML = `
+    <tr>
+      <td colspan="5" class="muted">Đang tải...</td>
+    </tr>
+  `;
+
   try {
     const keyword = searchInput.value.trim();
-    // axios tự ghép params thành ?q=... (và tự mã hoá tiếng Việt)
-    const items = await api.get("/items", keyword ? { q: keyword } : undefined);
+
+    const items = await api.get(
+      "/items",
+      keyword ? { q: keyword } : undefined
+    );
+
     renderItems(items);
+
   } catch (error) {
-    tableBody.innerHTML = `<tr><td colspan="5" class="text-error">${escapeHtml(error.message)}</td></tr>`;
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="5" class="text-error">
+          ${escapeHtml(error.message)}
+        </td>
+      </tr>
+    `;
   }
 }
 
 function renderItems(items) {
-  if (items.length === 0) {
-    tableBody.innerHTML = `<tr><td colspan="5" class="muted">Chưa có dữ liệu</td></tr>`;
+  if (!items.length) {
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="5" class="muted">
+          Chưa có dữ liệu
+        </td>
+      </tr>
+    `;
     return;
   }
-  tableBody.innerHTML = items.map((item) => `
-    <tr>
-      <td>${item.id}</td>
-      <td>
-        <strong>${escapeHtml(item.name)}</strong>
-        <div class="muted">${escapeHtml(item.description)}</div>
-      </td>
-      <td class="text-right">${formatMoney(item.price)}</td>
-      <td>${formatDateTime(item.created_at)}</td>
-      <td class="actions">
-        <button class="btn btn-small" data-action="edit" data-id="${item.id}">Sửa</button>
-        <button class="btn btn-small btn-danger" data-action="delete" data-id="${item.id}">Xoá</button>
-      </td>
-    </tr>`).join("");
+
+  tableBody.innerHTML = items.map(item => {
+    const available =
+      item.status === "AVAILABLE" &&
+      Number(item.quantity) > 0;
+
+    return `
+      <tr>
+        <td>${Number(item.id)}</td>
+
+        <td>
+          <strong>${escapeHtml(item.name)}</strong>
+
+          <div class="muted">
+            ${escapeHtml(item.description || "")}
+          </div>
+
+          <div class="muted">
+            Tồn kho: ${Number(item.quantity)}
+          </div>
+        </td>
+
+        <td class="text-right">
+          ${formatMoney(Number(item.price))}
+        </td>
+
+        <td>${formatDateTime(item.created_at)}</td>
+
+        <td class="actions">
+          <button
+            class="btn btn-small btn-primary"
+            data-action="add-cart"
+            data-id="${Number(item.id)}"
+            ${available ? "" : "disabled"}
+          >
+            Thêm vào giỏ
+          </button>
+
+          <button
+            class="btn btn-small btn-primary"
+            data-action="buy-now"
+            data-id="${Number(item.id)}"
+            ${available ? "" : "disabled"}
+          >
+            Mua ngay
+          </button>
+
+          <button
+            class="btn btn-small"
+            data-action="edit"
+            data-id="${Number(item.id)}"
+          >
+            Sửa
+          </button>
+
+          <button
+            class="btn btn-small btn-danger"
+            data-action="delete"
+            data-id="${Number(item.id)}"
+          >
+            Xóa
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join("");
 }
 
-// ---------- Thêm / Sửa ----------
-form.addEventListener("submit", async (event) => {
-  event.preventDefault(); // không cho trình duyệt tự reload trang
+// ==================== THÊM / SỬA ====================
+
+form.addEventListener("submit", async event => {
+  event.preventDefault();
 
   const data = {
     name: form.name.value.trim(),
     description: form.description.value.trim() || null,
-    price: Number(form.price.value || 0),
+    price: Number(form.price.value || 0)
   };
 
   submitButton.disabled = true;
+
   try {
     if (editingId === null) {
       await api.post("/items", data);
-      showToast("Đã thêm item");
+      showToast("Đã thêm sản phẩm");
     } else {
       await api.put(`/items/${editingId}`, data);
-      showToast("Đã cập nhật item");
+      showToast("Đã cập nhật sản phẩm");
     }
+
     resetForm();
-    loadItems();
+    await loadItems();
+
   } catch (error) {
     showToast(error.message, "error");
   } finally {
@@ -79,14 +156,19 @@ form.addEventListener("submit", async (event) => {
 async function startEdit(id) {
   try {
     const item = await api.get(`/items/${id}`);
+
     editingId = id;
+
     form.name.value = item.name;
-    form.description.value = item.description ?? "";
+    form.description.value = item.description || "";
     form.price.value = item.price;
+
     formTitle.textContent = `Sửa item #${id}`;
     submitButton.textContent = "Lưu thay đổi";
     cancelButton.hidden = false;
+
     form.name.focus();
+
   } catch (error) {
     showToast(error.message, "error");
   }
@@ -94,38 +176,117 @@ async function startEdit(id) {
 
 function resetForm() {
   editingId = null;
+
   form.reset();
+
   formTitle.textContent = "Thêm item mới";
   submitButton.textContent = "Thêm";
   cancelButton.hidden = true;
 }
 
-// ---------- Xoá ----------
+// ==================== XÓA ====================
+
 async function deleteItem(id) {
-  if (!confirm(`Xoá item #${id}?`)) return;
+  if (!confirm(`Xóa item #${id}?`)) return;
+
   try {
     await api.delete(`/items/${id}`);
-    showToast("Đã xoá item");
-    if (editingId === id) resetForm();
-    loadItems();
+
+    showToast("Đã xóa sản phẩm");
+
+    if (editingId === id) {
+      resetForm();
+    }
+
+    await loadItems();
+
   } catch (error) {
     showToast(error.message, "error");
   }
 }
 
-// Bắt sự kiện click cho các nút Sửa/Xoá trong bảng (event delegation)
-tableBody.addEventListener("click", (event) => {
-  const button = event.target.closest("button[data-action]");
-  if (!button) return;
+// ==================== GIỎ HÀNG ====================
+
+async function addToCart(id) {
+  if (!localStorage.getItem("token")) {
+    showToast("Bạn cần đăng nhập trước", "error");
+    window.location.href = "auth.html";
+    return;
+  }
+
+  try {
+    await api.post("/cart/items", {
+      product_id: id,
+      quantity: 1
+    });
+
+    if (window.updateCartBadge) {
+      window.updateCartBadge();
+    }
+
+    showToast("Đã thêm sản phẩm vào giỏ hàng");
+
+  } catch (error) {
+    showToast(error.message, "error");
+  }
+}
+
+// ==================== MUA NGAY ====================
+
+async function buyNow(id) {
+  if (!localStorage.getItem("token")) {
+    showToast("Bạn cần đăng nhập trước", "error");
+    window.location.href = "auth.html";
+    return;
+  }
+
+  window.location.href =
+    `checkout.html?mode=buy-now&item_id=${encodeURIComponent(id)}&quantity=1`;
+}
+
+// ==================== SỰ KIỆN ====================
+
+tableBody.addEventListener("click", async event => {
+  const button = event.target.closest(
+    "button[data-action]"
+  );
+
+  if (!button || actionBusy) return;
+
   const id = Number(button.dataset.id);
-  if (button.dataset.action === "edit") startEdit(id);
-  if (button.dataset.action === "delete") deleteItem(id);
+  const action = button.dataset.action;
+
+  if (!Number.isSafeInteger(id) || id < 1) return;
+
+  actionBusy = true;
+  button.disabled = true;
+
+  try {
+    switch (action) {
+      case "edit":
+        await startEdit(id);
+        break;
+
+      case "delete":
+        await deleteItem(id);
+        break;
+
+      case "add-cart":
+        await addToCart(id);
+        break;
+
+      case "buy-now":
+        await buyNow(id);
+        break;
+    }
+  } finally {
+    actionBusy = false;
+    button.disabled = false;
+  }
 });
 
 cancelButton.addEventListener("click", resetForm);
 
-// Tìm kiếm: gõ xong 300ms mới gọi API (tránh gọi liên tục mỗi phím)
-let searchTimer;
 searchInput.addEventListener("input", () => {
   clearTimeout(searchTimer);
   searchTimer = setTimeout(loadItems, 300);

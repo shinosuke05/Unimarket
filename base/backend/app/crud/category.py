@@ -1,8 +1,11 @@
+
 """CRUD cho categories."""
 
+from fastapi import HTTPException
 from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
+from app.core.enum import ProductStatus
 from app.models.category import Category
 from app.models.item import Item
 from app.models.product import Product
@@ -10,7 +13,7 @@ from app.schemas.category import CategoryCreate, CategoryUpdate
 
 
 def count_items(db: Session, category_id: int) -> int:
-    """Đếm sản phẩm chưa xóa mềm trong bảng items."""
+    """Đếm sản phẩm chưa xóa mềm."""
 
     return db.scalar(
         select(func.count())
@@ -23,7 +26,7 @@ def count_items(db: Session, category_id: int) -> int:
 
 
 def count_products(db: Session, category_id: int) -> int:
-    """Đếm sản phẩm trong bảng products."""
+    """Đếm dữ liệu cũ để bảo vệ khóa ngoại."""
 
     return db.scalar(
         select(func.count())
@@ -33,10 +36,25 @@ def count_products(db: Session, category_id: int) -> int:
 
 
 def count_all_products(db: Session, category_id: int) -> int:
-    return (
-        count_items(db, category_id)
-        + count_products(db, category_id)
-    )
+    """Chỉ đếm nguồn dữ liệu chính."""
+
+    return count_items(db, category_id)
+
+
+def count_visible_products(
+    db: Session,
+    category_id: int
+) -> int:
+
+    return db.scalar(
+        select(func.count())
+        .select_from(Item)
+        .where(
+            Item.category_id == category_id,
+            Item.deleted_at.is_(None),
+            Item.status != ProductStatus.HIDDEN
+        )
+    ) or 0
 
 
 def get_categories(
@@ -58,7 +76,12 @@ def get_categories(
             "description": c.description,
             "is_active": c.is_active,
             "created_at": c.created_at,
-            "product_count": count_all_products(db, c.id),
+
+            "product_count": (
+                count_all_products(db, c.id)
+                if include_inactive
+                else count_visible_products(db, c.id)
+            ),
         }
         for c in categories
     ]
@@ -114,14 +137,34 @@ def update_category(
 
 
 def delete_category(db: Session, cat: Category) -> None:
-    db.execute(
-        update(Item)
-        .where(
-            Item.category_id == cat.id,
-            Item.deleted_at.is_not(None)
-        )
-        .values(category_id=None)
-    )
 
-    db.delete(cat)
-    db.commit()
+    # Không xóa danh mục đang chứa sản phẩm.
+    if count_items(db, cat.id) > 0:
+        raise HTTPException(
+            status_code=409,
+            detail="Danh mục vẫn còn sản phẩm"
+        )
+
+    # Bảo vệ dữ liệu products cũ sau migration.
+    if count_products(db, cat.id) > 0:
+        raise HTTPException(
+            status_code=409,
+            detail="Danh mục vẫn còn dữ liệu sản phẩm cũ"
+        )
+
+    try:
+        db.execute(
+            update(Item)
+            .where(
+                Item.category_id == cat.id,
+                Item.deleted_at.is_not(None)
+            )
+            .values(category_id=None)
+        )
+
+        db.delete(cat)
+        db.commit()
+
+    except Exception:
+        db.rollback()
+        raise

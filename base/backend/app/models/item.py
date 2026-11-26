@@ -1,13 +1,26 @@
+
 """Model bảng items."""
 
 from datetime import datetime
 from decimal import Decimal
 
 from sqlalchemy import (
-    DateTime, Enum, ForeignKey, Integer,
-    Numeric, String, Text, func
+    DateTime,
+    Enum,
+    ForeignKey,
+    Integer,
+    Numeric,
+    String,
+    Text,
+    func,
 )
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from sqlalchemy.orm import (
+    Mapped,
+    mapped_column,
+    relationship,
+    synonym,
+)
 
 from app.core.enum import ProductCondition, ProductStatus
 from app.db.session import Base
@@ -56,6 +69,17 @@ class Item(Base):
         index=True
     )
 
+    legacy_product_id: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+        unique=True
+    )
+
+    condition_percent: Mapped[str | None] = mapped_column(
+        String(30),
+        nullable=True
+    )
+
     deleted_at: Mapped[datetime | None] = mapped_column(
         DateTime,
         nullable=True,
@@ -80,3 +104,20 @@ class Item(Base):
         cascade="all, delete-orphan",
         lazy="selectin"
     )
+
+    # Tương thích với module giỏ hàng và đặt hàng.
+    stock = synonym("quantity")
+
+    @property
+    def is_active(self) -> bool:
+        return (
+            self.deleted_at is None
+            and self.status != ProductStatus.HIDDEN
+        )
+
+    @property
+    def is_sold(self) -> bool:
+        return (
+            self.status == ProductStatus.SOLD
+            or self.quantity <= 0
+        )

@@ -1,9 +1,19 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Numeric, Enum
-from sqlalchemy.orm import relationship
+
 from datetime import datetime, timezone
 import enum
 
-from app.db.database import Base
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    DateTime,
+    ForeignKey,
+    Numeric,
+    Enum,
+)
+
+from sqlalchemy.orm import relationship, synonym
+from app.db.session import Base
 
 
 class ReceivingMethod(str, enum.Enum):
@@ -25,14 +35,24 @@ class OrderStatus(str, enum.Enum):
     CANCELLED = "CANCELLED"
 
 
+FulfillmentType = ReceivingMethod
+
+
 class Order(Base):
     __tablename__ = "orders"
 
     id = Column(Integer, primary_key=True, index=True)
 
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user_id = Column(
+        Integer,
+        ForeignKey("users.id"),
+        nullable=False
+    )
 
     recipient = Column(String(100), nullable=False)
+
+    receiver_phone = Column(String(20), nullable=True)
+
     address = Column(String(255), nullable=False)
 
     receiving_method = Column(
@@ -45,7 +65,25 @@ class Order(Base):
         nullable=False
     )
 
-    total_amount = Column(Numeric(12, 2), nullable=False, default=0)
+    subtotal = Column(
+        Numeric(12, 2),
+        nullable=False,
+        default=0
+    )
+
+    shipping_fee = Column(
+        Numeric(12, 2),
+        nullable=False,
+        default=0
+    )
+
+    total_amount = Column(
+        Numeric(12, 2),
+        nullable=False,
+        default=0
+    )
+
+    note = Column(String(500), nullable=True)
 
     status = Column(
         Enum(OrderStatus),
@@ -59,8 +97,21 @@ class Order(Base):
     )
 
     user = relationship("User")
+
+    payment = relationship(
+        "Payment",
+        back_populates="order",
+        uselist=False
+    )
+
     items = relationship(
         "OrderItem",
         back_populates="order",
         cascade="all, delete-orphan"
     )
+
+    # Tương thích giữa các module
+    buyer_id = synonym("user_id")
+    receiver_name = synonym("recipient")
+    shipping_address = synonym("address")
+    fulfillment_type = synonym("receiving_method")

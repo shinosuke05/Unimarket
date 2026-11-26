@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Đặt hàng | UniMarket</title>
+
+    <link rel="icon" href="../assets/images/logo.svg" />
+    <link rel="stylesheet" href="../css/style.css" />
+  </head>
+
+  <body data-root="../">
+    <header id="app-header"></header>
+
+    <main class="container layout-2col">
+      <section class="card">
+        <h2>Thông tin đặt hàng</h2>
+
+        <form id="checkout-form">
+          <label for="receiver-name"> Họ tên người nhận * </label>
+
+          <input
+            id="receiver-name"
+            type="text"
+            minlength="2"
+            maxlength="100"
+            required
+          />
+
+          <label for="receiver-phone"> Số điện thoại * </label>
+
+          <input
+            id="receiver-phone"
+            type="tel"
+            minlength="8"
+            maxlength="20"
+            required
+          />
+
+          <label>Hình thức nhận hàng</label>
+
+          <div class="radio-group">
+            <label class="radio-item">
+              <input type="radio" name="shipping" value="delivery" checked />
+              Giao hàng tận nơi
+            </label>
+
+            <label class="radio-item">
+              <input type="radio" name="shipping" value="pickup" />
+              Nhận tại cửa hàng
+            </label>
+          </div>
+
+          <div id="shipping-address-group">
+            <label for="address-select"> Chọn địa chỉ nhận hàng * </label>
+
+            <select
+              id="address-select"
+              required
+              style="width: 100%; padding: 8px 10px"
+            >
+              <option value="">-- Chọn địa chỉ --</option>
+            </select>
+
+            <div class="text-right">
+              <a href="address.html" class="muted"> + Thêm địa chỉ mới </a>
+            </div>
+          </div>
+
+          <label>Phương thức thanh toán</label>
+
+          <div class="radio-group">
+            <label class="radio-item">
+              <input type="radio" name="payment" value="cod" checked />
+              Thanh toán khi nhận hàng (COD)
+            </label>
+
+            <label class="radio-item">
+              <input type="radio" name="payment" value="bank" />
+              Chuyển khoản ngân hàng (QR Code)
+            </label>
+          </div>
+
+          <label for="order-note"> Ghi chú </label>
+
+          <textarea
+            id="order-note"
+            maxlength="500"
+            placeholder="Ghi chú cho đơn hàng..."
+          ></textarea>
+
+          <p id="checkout-error" class="text-error"></p>
+
+          <div class="form-actions" style="margin-top: 24px">
+            <button
+              id="checkout-submit"
+              type="submit"
+              class="btn btn-primary"
+              style="width: 100%"
+              disabled
+            >
+              Xác nhận Đặt hàng
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <section class="card">
+        <h2>Tóm tắt đơn hàng</h2>
+
+        <div id="checkout-summary-items">Đang tải thông tin đơn hàng...</div>
+      </section>
+    </main>
+
+    <footer id="app-footer"></footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.7.9/dist/axios.min.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../js/layout.js"></script>
+    <script src="../js/pages/checkout.js"></script>
+  </body>
+</html>

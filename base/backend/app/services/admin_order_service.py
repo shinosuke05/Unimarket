@@ -1,57 +1,70 @@
 
-from app.models.order_status_history import OrderStatusHistory
+from fastapi import HTTPException
+
+from app.models.order import OrderStatus
+from app.models.user import User
+from app.services.order_service import change_status
 
 
-def update_order_status(db, order, new_status, admin_id):
-    old_status = order.status
+def update_order_status(
+    db,
+    order,
+    new_status,
+    admin_id
+):
+    admin = db.get(User, admin_id)
 
-    # Kiem tra luong trang thai
-    allowed_status = {
-        "PENDING": ["CONFIRMED", "REJECTED"],
-        "CONFIRMED": ["SHIPPING"],
-        "SHIPPING": ["COMPLETED"]
-    }
+    if admin is None or admin.role != "ADMIN":
+        return False, "Không có quyền quản lý đơn hàng"
 
-    if new_status not in allowed_status.get(old_status, []):
-        return False, "Khong the cap nhat trang thai nay"
-
-    # Cap nhat trang thai don hang
-    order.status = new_status
-
-    # Ghi lich su trang thai
-    history = OrderStatusHistory(
-        order_id=order.id,
-        changed_by=admin_id,
-        old_status=old_status,
-        new_status=new_status,
-        note="Admin cap nhat trang thai"
-    )
-
-    db.add(history)
-
-    # Neu tu choi don hang thi hoan lai ton kho
     if new_status == "REJECTED":
-        for item in order.items:
-            item.product.stock += item.quantity
+        new_status = "CANCELLED"
 
-    db.commit()
+    try:
+        target_status = OrderStatus(new_status)
 
-    return True, "Cap nhat don hang thanh cong"
+    except ValueError:
+        return False, "Trạng thái không hợp lệ"
+
+    try:
+        change_status(
+            db,
+            order,
+            target_status,
+            admin,
+            note="Admin cập nhật trạng thái đơn hàng"
+        )
+
+        return True, "Cập nhật đơn hàng thành công"
+
+    except HTTPException as exc:
+        db.rollback()
+
+        return False, exc.detail
 
 
 def confirm_order(db, order, admin_id):
     return update_order_status(
-        db, order, "CONFIRMED", admin_id
+        db,
+        order,
+        "CONFIRMED",
+        admin_id
     )
 
 
 def reject_order(db, order, admin_id):
     return update_order_status(
-        db, order, "REJECTED", admin_id
+        db,
+        order,
+        "CANCELLED",
+        admin_id
     )
 
 
 def complete_order(db, order, admin_id):
     return update_order_status(
-        db, order, "COMPLETED", admin_id
+        db,
+        order,
+        "COMPLETED",
+        admin_id
     )

@@ -64,7 +64,7 @@ class ProductUpdate(BaseModel):
 class ProductOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
-    category_id: int
+    category_id: int | None
     name: str
     description: str | None
     price: Decimal

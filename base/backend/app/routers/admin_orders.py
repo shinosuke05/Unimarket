@@ -10,7 +10,7 @@ from app.services.admin_order_service import (
     update_order_status,
     complete_order
 )
-from app.core.dependencies import get_current_user
+from app.core.dependencies import require_admin
 
 
 router = APIRouter(
@@ -25,7 +25,7 @@ def list_orders(
     status: str = None,
     keyword: str = None,
     db: Session = Depends(get_db),
-    admin=Depends(get_current_user)
+    admin=Depends(require_admin)
 ):
     return get_all_orders(db, status, keyword)
 
@@ -35,7 +35,7 @@ def list_orders(
 def order_detail(
     order_id: int,
     db: Session = Depends(get_db),
-    admin=Depends(get_current_user)
+    admin=Depends(require_admin)
 ):
     order = get_order_by_id(db, order_id)
 
@@ -53,7 +53,7 @@ def order_detail(
 def confirm(
     order_id: int,
     db: Session = Depends(get_db),
-    admin=Depends(get_current_user)
+    admin=Depends(require_admin)
 ):
     order = get_order_by_id(db, order_id)
 
@@ -73,7 +73,7 @@ def confirm(
 def reject(
     order_id: int,
     db: Session = Depends(get_db),
-    admin=Depends(get_current_user)
+    admin=Depends(require_admin)
 ):
     order = get_order_by_id(db, order_id)
 
@@ -94,7 +94,7 @@ def change_status(
     order_id: int,
     new_status: str,
     db: Session = Depends(get_db),
-    admin=Depends(get_current_user)
+    admin=Depends(require_admin)
 ):
     order = get_order_by_id(db, order_id)
 
@@ -116,7 +116,7 @@ def change_status(
 def complete(
     order_id: int,
     db: Session = Depends(get_db),
-    admin=Depends(get_current_user)
+    admin=Depends(require_admin)
 ):
     order = get_order_by_id(db, order_id)
 

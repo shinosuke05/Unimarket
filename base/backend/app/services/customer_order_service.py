@@ -1,34 +1,28 @@
 
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.models.order import Order
-from app.models.order_status_history import OrderStatusHistory
+from app.models.user import User
+from app.services.order_service import customer_cancel
 
 
-def cancel_order(db: Session, order: Order, user_id: int):
-    if order.status != "PENDING":
-        return False, "Don hang da duoc xac nhan, khong the huy"
+def cancel_order(
+    db: Session,
+    order: Order,
+    user_id: int
+):
+    user = db.get(User, user_id)
 
-    old_status = order.status
+    if user is None or order.user_id != user_id:
+        return False, "Không có quyền hủy đơn hàng"
 
-    # Hoan lai so luong san pham vao kho
-    for item in order.items:
-        product = item.product
-        product.stock += item.quantity
+    try:
+        customer_cancel(db, order, user)
 
-    # Cap nhat trang thai don hang
-    order.status = "CANCELLED"
+        return True, "Hủy đơn hàng thành công"
 
-    # Luu lich su trang thai
-    history = OrderStatusHistory(
-        order_id=order.id,
-        changed_by=user_id,
-        old_status=old_status,
-        new_status="CANCELLED",
-        note="Khach hang huy don hang"
-    )
+    except HTTPException as exc:
+        db.rollback()
 
-    db.add(history)
-    db.commit()
-
-    return True, "Huy don hang thanh cong"
+        return False, exc.detail
