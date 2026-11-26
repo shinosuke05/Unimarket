@@ -11,6 +11,21 @@ const cancelButton = document.getElementById("btn-cancel");
 let editingId = null;
 let actionBusy = false;
 let searchTimer;
+let isAdmin = false;
+
+async function checkAdminRole() {
+  if (!localStorage.getItem("token")) {
+    isAdmin = false;
+    return;
+  }
+
+  try {
+    const me = await api.get("/auth/me");
+    isAdmin = String(me?.role || "").toUpperCase() === "ADMIN";
+  } catch {
+    isAdmin = false;
+  }
+}
 
 // ==================== DANH SÁCH ====================
 
@@ -100,6 +115,7 @@ function renderItems(items) {
             Mua ngay
           </button>
 
+          ${isAdmin ? `
           <button
             class="btn btn-small"
             data-action="edit"
@@ -115,6 +131,7 @@ function renderItems(items) {
           >
             Xóa
           </button>
+          ` : ""}
         </td>
       </tr>
     `;
@@ -264,10 +281,12 @@ tableBody.addEventListener("click", async event => {
   try {
     switch (action) {
       case "edit":
+        if (!isAdmin) break;
         await startEdit(id);
         break;
 
       case "delete":
+        if (!isAdmin) break;
         await deleteItem(id);
         break;
 
@@ -292,4 +311,9 @@ searchInput.addEventListener("input", () => {
   searchTimer = setTimeout(loadItems, 300);
 });
 
-loadItems();
+async function initItemsPage() {
+  await checkAdminRole();
+  await loadItems();
+}
+
+initItemsPage();
