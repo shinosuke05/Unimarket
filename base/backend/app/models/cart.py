@@ -1,23 +1,46 @@
-from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer, UniqueConstraint, func
-from sqlalchemy.orm import Mapped, mapped_column
+from datetime import datetime, timezone
+
+from sqlalchemy import Column, Integer, DateTime, ForeignKey
+from sqlalchemy.orm import relationship
 
 from app.db.session import Base
 
 
-class CartItem(Base):
-    __tablename__ = "cart_items"
-    __table_args__ = (
-        UniqueConstraint("user_id", "item_id", name="uq_cart_user_item"),
+class Cart(Base):
+    __tablename__ = "carts"
+
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
     )
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    user_id = Column(
+        Integer,
+        ForeignKey("users.id"),
+        unique=True,
+        nullable=False
     )
-    item_id: Mapped[int] = mapped_column(
-        ForeignKey("items.id", ondelete="CASCADE")
+
+    created_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc)
     )
-    quantity: Mapped[int] = mapped_column(Integer, default=1)
-    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc)
+    )
+
+    user = relationship(
+        "User",
+        back_populates="cart"
+    )
+
+    items = relationship(
+        "CartItem",
+        back_populates="cart",
+        cascade="all, delete-orphan"
+    )

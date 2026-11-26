@@ -1,10 +1,12 @@
+"""Model bảng users."""
 
 from datetime import datetime
 
-from sqlalchemy import String, Boolean, DateTime, Enum, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import Boolean, DateTime, Enum, String, func
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.session import Base
+
 
 class User(Base):
     __tablename__ = "users"
@@ -48,4 +50,10 @@ class User(Base):
         DateTime,
         server_default=func.now(),
         onupdate=func.now()
+    )
+
+    cart = relationship(
+        "Cart",
+        back_populates="user",
+        uselist=False
     )

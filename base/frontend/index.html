@@ -1,45 +1,73 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="vi">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Trang chủ | KS25 Base</title>
-  <link rel="icon" href="assets/images/logo.svg">
-  <link rel="stylesheet" href="css/style.css">
-  <script src="./js/api.js"></script>
-  <script src="./js/main.js"></script>
-</head>
-<body data-root="./">
-  <header id="app-header"></header>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>UniMarket | Mua bán đồ cũ sinh viên</title>
+    <link rel="icon" href="assets/images/logo.svg" />
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
 
-  <main class="container">
-    <section class="card">
-      <h1>Base code Frontend (HTML · CSS · JS)</h1>
-      <p>Khung dự án cho các nhóm thực tập. Trang này kiểm tra kết nối <strong>Frontend → Backend → MySQL</strong>.</p>
+  <body data-root="./">
+    <header id="app-header"></header>
 
-      <p>API đang dùng: <code id="api-url"></code> <span class="muted">(sửa trong <code>js/config.js</code>)</span></p>
-      <div id="health-status" class="status"></div>
-      <button id="btn-recheck" class="btn">Kiểm tra lại</button>
-    </section>
+    <main class="container homepage">
+      <!-- Banner giới thiệu -->
+      <section class="home-hero">
+        <div class="home-hero-content">
+          <h1>UniMarket - Chợ đồ cũ sinh viên</h1>
+          <p>
+            Khám phá những món đồ chất lượng với giá tiết kiệm. Mua sắm dễ dàng,
+            phù hợp với sinh viên.
+          </p>
+          <a href="#latest-products" class="btn btn-primary">
+            Khám phá sản phẩm
+          </a>
+        </div>
+      </section>
 
-    <section class="card">
-      <h2>Bắt đầu từ đâu?</h2>
-      <ol>
-        <li>Xem trang <a href="pages/items.html">Items</a>: ví dụ thêm / sửa / xoá / tìm kiếm gọi API thật.</li>
-        <li>Đọc <code>js/api.js</code> để biết cách gọi API bằng axios.</li>
-        <li>Tạo trang mới: copy <code>pages/items.html</code> + <code>js/pages/items.js</code>, thêm link vào <code>js/layout.js</code>.</li>
-      </ol>
-    </section>
-  </main>
+      <!-- Danh mục sản phẩm -->
+      <section class="home-section" id="categories-section">
+        <div class="home-section-header">
+          <h2>Danh mục sản phẩm</h2>
+        </div>
 
-  <footer id="app-footer"></footer>
+        <div id="category-list" class="home-category-grid">
+          <p class="muted">Đang tải danh mục...</p>
+        </div>
+      </section>
 
-  <!-- Thứ tự quan trọng: axios -> config -> api -> utils -> layout -> script riêng của trang -->
-  <script src="https://cdn.jsdelivr.net/npm/axios@1.7.9/dist/axios.min.js"></script>
-  <script src="js/config.js"></script>
-  <script src="js/api.js"></script>
-  <script src="js/utils.js"></script>
-  <script src="js/layout.js"></script>
-  <script src="js/pages/home.js"></script>
-</body>
+      <!-- Sản phẩm mới nhất -->
+      <section class="home-section" id="latest-products">
+        <div class="home-section-header">
+          <h2>Sản phẩm mới nhất</h2>
+        </div>
+
+        <div id="latest-product-list" class="home-product-grid">
+          <p class="muted">Đang tải sản phẩm...</p>
+        </div>
+      </section>
+
+      <!-- Sản phẩm nổi bật -->
+      <section class="home-section" id="featured-products">
+        <div class="home-section-header">
+          <h2>Sản phẩm nổi bật</h2>
+        </div>
+
+        <div id="featured-product-list" class="home-product-grid">
+          <p class="muted">Đang tải sản phẩm nổi bật...</p>
+        </div>
+      </section>
+    </main>
+
+    <footer id="app-footer"></footer>
+
+    <!-- Thứ tự tải JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.7.9/dist/axios.min.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/layout.js"></script>
+    <script src="js/pages/home.js"></script>
+  </body>
 </html>

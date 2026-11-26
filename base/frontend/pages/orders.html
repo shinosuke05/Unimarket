@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Đơn hàng của tôi | UniMarket</title>
+  <link rel="icon" href="../assets/images/logo.svg">
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body data-root="../">
+  <header id="app-header"></header>
+  <main class="container orders-page">
+    <div class="page-heading">
+      <div>
+        <p class="eyebrow">TÀI KHOẢN</p>
+        <h1>Đơn hàng của tôi</h1>
+        <p class="muted">Theo dõi và quản lý các đơn hàng bạn đã đặt.</p>
+      </div>
+    </div>
+    <section class="card">
+      <div class="order-toolbar">
+        <input id="order-search" type="search" placeholder="Tìm theo mã đơn..." aria-label="Tìm đơn hàng">
+        <select id="status-filter" aria-label="Lọc trạng thái">
+          <option value="">Tất cả trạng thái</option>
+          <option value="PENDING">Chờ xác nhận</option>
+          <option value="CONFIRMED">Đã xác nhận</option>
+          <option value="SHIPPING">Đang giao</option>
+          <option value="COMPLETED">Hoàn thành</option>
+          <option value="CANCELLED">Đã huỷ</option>
+        </select>
+      </div>
+      <div id="orders-message" class="status status-loading">Đang tải đơn hàng...</div>
+      <div id="orders-list" class="orders-list"></div>
+    </section>
+  </main>
+  <footer id="app-footer"></footer>
+  <script src="https://cdn.jsdelivr.net/npm/axios@1.7.9/dist/axios.min.js"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/utils.js"></script>
+  <script src="../js/layout.js"></script>
+  <script src="../js/pages/orders.js"></script>
+</body>
+</html>

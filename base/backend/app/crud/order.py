@@ -1,172 +1,321 @@
-"""Logic đặt hàng + trừ tồn kho trong transaction.
 
-- Khoá dòng items bằng SELECT ... FOR UPDATE (with_for_update()).
-- Kiểm tra stock >= quantity cho TẤT CẢ items trước khi trừ.
-- Trừ kho, tạo order + order_items, (tuỳ chọn) xoá cart, commit.
-- Lỗi bất kỳ -> rollback toàn bộ.
-"""
+"""Nghiệp vụ đặt hàng, kiểm tra tồn kho và truy vấn đơn hàng."""
+
 from decimal import Decimal
 
 from fastapi import status
-from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy import or_, select
+from sqlalchemy.orm import Session, selectinload
 
-from app.models.cart import CartItem
+from app.core.enum import ProductStatus
+from app.models.cart import Cart
+from app.models.cart_item import CartItem
 from app.models.item import Item
-from app.models.order import Order, OrderItem
-from app.schemas.order import FulfillmentType, OrderBuyNow, OrderCreate
+from app.models.order import Order, OrderStatus
+from app.models.order_item import OrderItem
+from app.schemas.order import (
+    FulfillmentType,
+    OrderBuyNow,
+    OrderCreate,
+)
 
 DEFAULT_SHIPPING_FEE = Decimal("0")
 
 
 class OrderError(Exception):
-    def __init__(self, detail: str, code: int = status.HTTP_409_CONFLICT):
+    def __init__(
+        self,
+        detail: str,
+        code: int = status.HTTP_409_CONFLICT
+    ):
         self.detail = detail
         self.code = code
 
 
-def _load_items_for_update(db: Session, item_ids: list[int]) -> dict[int, Item]:
+def _load_items_for_update(
+    db: Session,
+    item_ids: list[int]
+) -> dict[int, Item]:
+
     if not item_ids:
-        raise OrderError("Danh sách sản phẩm trống", status.HTTP_400_BAD_REQUEST)
+        raise OrderError(
+            "Danh sách sản phẩm trống",
+            400
+        )
 
     stmt = (
         select(Item)
         .where(Item.id.in_(item_ids))
-        .with_for_update()          # khoá dòng InnoDB
+        .order_by(Item.id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
     )
-    items = {i.id: i for i in db.scalars(stmt)}
+
+    items = {
+        item.id: item
+        for item in db.scalars(stmt)
+    }
 
     missing = set(item_ids) - items.keys()
+
     if missing:
         raise OrderError(
             f"Sản phẩm không tồn tại: {sorted(missing)}",
-            status.HTTP_404_NOT_FOUND,
+            404
         )
 
-    inactive = [i.id for i in items.values() if not i.is_active]
-    if inactive:
-        raise OrderError(
-            f"Sản phẩm đã ngừng bán: {inactive}",
-            status.HTTP_400_BAD_REQUEST,
-        )
+    for item in items.values():
+        if (
+            item.deleted_at is not None
+            or item.status != ProductStatus.AVAILABLE
+        ):
+            raise OrderError(
+                f"Sản phẩm '{item.name}' không còn được bán",
+                400
+            )
 
     return items
-
-
-def _build_line_items(
-    db: Session, raw_items: list[tuple[int, int]]  # [(item_id, quantity), ...]
-) -> tuple[list[OrderItem], Decimal]:
-    item_ids = [iid for iid, _ in raw_items]
-    items_map = _load_items_for_update(db, item_ids)
-
-    lines: list[OrderItem] = []
-    subtotal = Decimal("0")
-
-    for iid, qty in raw_items:
-        item = items_map[iid]
-        if item.stock < qty:
-            raise OrderError(
-                f"Sản phẩm '{item.name}' chỉ còn {item.stock}, bạn đặt {qty}",
-                status.HTTP_409_CONFLICT,
-            )
-
-        line_total = Decimal(item.price) * qty
-        lines.append(
-            OrderItem(
-                item_id=item.id,
-                item_name=item.name,
-                unit_price=item.price,
-                quantity=qty,
-                line_total=line_total,
-            )
-        )
-        subtotal += line_total
-
-    return lines, subtotal
 
 
 def _create_order(
     db: Session,
     user_id: int,
     data: OrderCreate,
-    raw_items: list[tuple[int, int]],
-    clear_cart: bool,
+    raw_items: list[tuple[int, int]]
 ) -> Order:
-    lines, subtotal = _build_line_items(db, raw_items)
+
+    merged = {}
+
+    for item_id, quantity in raw_items:
+        if quantity <= 0:
+            raise OrderError(
+                "Số lượng không hợp lệ",
+                400
+            )
+
+        merged[item_id] = (
+            merged.get(item_id, 0) + quantity
+        )
+
+    items_map = _load_items_for_update(
+        db,
+        list(merged.keys())
+    )
+
+    lines = []
+    subtotal = Decimal("0")
+
+    for item_id, quantity in merged.items():
+
+        item = items_map[item_id]
+
+        if item.quantity < quantity:
+            raise OrderError(
+                f"Sản phẩm '{item.name}' chỉ còn "
+                f"{item.quantity}, bạn đặt {quantity}",
+                409
+            )
+
+        price = Decimal(str(item.price))
+        line_total = price * quantity
+
+        lines.append(
+            OrderItem(
+                product_id=item.id,
+                product_name=item.name,
+                price_at_order=price,
+                quantity=quantity,
+                subtotal=line_total
+            )
+        )
+
+        subtotal += line_total
 
     shipping_fee = (
         DEFAULT_SHIPPING_FEE
         if data.fulfillment_type == FulfillmentType.DELIVERY
         else Decimal("0")
     )
-    total = subtotal + shipping_fee
 
     order = Order(
         user_id=user_id,
-        receiver_name=data.receiver_name,
+        recipient=data.receiver_name,
         receiver_phone=data.receiver_phone,
-        shipping_address=data.shipping_address,
-        fulfillment_type=data.fulfillment_type.value,
-        payment_method=data.payment_method.value,
-        status="PENDING",
+        address=data.shipping_address or "Nhận tại cửa hàng",
+        receiving_method=data.fulfillment_type,
+        payment_method=data.payment_method,
+        status=OrderStatus.PENDING,
         subtotal=subtotal,
         shipping_fee=shipping_fee,
-        total_amount=total,
+        total_amount=subtotal + shipping_fee,
         note=data.note,
-        items=lines,
+        items=lines
     )
 
-    # Trừ kho (đã lock dòng ở _load_items_for_update)
-    for line in lines:
-        item = db.get(Item, line.item_id)   # identity map – đã lock
-        item.stock -= line.quantity
+    for item_id, quantity in merged.items():
+
+        item = items_map[item_id]
+        item.quantity -= quantity
+
+        if item.quantity == 0:
+            item.status = ProductStatus.SOLD
 
     db.add(order)
 
-    if clear_cart:
-        db.query(CartItem).filter(CartItem.user_id == user_id).delete(
-            synchronize_session=False
+    return order
+
+
+def checkout_from_cart(
+    db: Session,
+    user_id: int,
+    data: OrderCreate
+) -> Order:
+
+    try:
+        cart = db.scalar(
+            select(Cart)
+            .where(Cart.user_id == user_id)
+            .with_for_update()
         )
 
-    return order
+        if cart is None:
+            raise OrderError(
+                "Giỏ hàng đang trống",
+                400
+            )
 
+        cart_rows = list(
+            db.scalars(
+                select(CartItem)
+                .where(CartItem.cart_id == cart.id)
+                .with_for_update()
+            )
+        )
 
-def checkout_from_cart(db: Session, user_id: int, data: OrderCreate) -> Order:
-    cart_rows = db.query(CartItem).filter(CartItem.user_id == user_id).all()
-    if not cart_rows:
-        raise OrderError("Giỏ hàng đang trống", status.HTTP_400_BAD_REQUEST)
+        if not cart_rows:
+            raise OrderError(
+                "Giỏ hàng đang trống",
+                400
+            )
 
-    raw_items = [(row.item_id, row.quantity) for row in cart_rows]
+        raw_items = [
+            (row.product_id, row.quantity)
+            for row in cart_rows
+        ]
 
-    try:
-        order = _create_order(db, user_id, data, raw_items, clear_cart=True)
+        order = _create_order(
+            db,
+            user_id,
+            data,
+            raw_items
+        )
+
+        for row in cart_rows:
+            db.delete(row)
+
         db.commit()
-    except OrderError:
-        db.rollback()
-        raise
+        db.refresh(order)
+
+        return order
+
     except Exception:
         db.rollback()
         raise
 
-    db.refresh(order)
-    return order
 
+def buy_now(
+    db: Session,
+    user_id: int,
+    data: OrderBuyNow
+) -> Order:
 
-def buy_now(db: Session, user_id: int, data: OrderBuyNow) -> Order:
-    merged: dict[int, int] = {}
-    for it in data.items:
-        merged[it.item_id] = merged.get(it.item_id, 0) + it.quantity
-    raw_items = list(merged.items())
+    raw_items = [
+        (item.item_id, item.quantity)
+        for item in data.items
+    ]
 
     try:
-        order = _create_order(db, user_id, data, raw_items, clear_cart=False)
+        order = _create_order(
+            db,
+            user_id,
+            data,
+            raw_items
+        )
+
         db.commit()
-    except OrderError:
-        db.rollback()
-        raise
+        db.refresh(order)
+
+        return order
+
     except Exception:
         db.rollback()
         raise
 
-    db.refresh(order)
-    return order
+
+def _parse_order_code(q: str) -> int | None:
+
+    q = q.strip().upper()
+
+    if q.startswith("DH") and q[2:].isdigit():
+        return int(q[2:])
+
+    return None
+
+
+def list_orders(
+    db: Session,
+    buyer_id: int | None = None,
+    status: OrderStatus | None = None,
+    q: str | None = None,
+    skip: int = 0,
+    limit: int = 20
+) -> list[Order]:
+
+    query = (
+        select(Order)
+        .options(selectinload(Order.items))
+        .order_by(Order.id.desc())
+    )
+
+    if buyer_id is not None:
+        query = query.where(
+            Order.user_id == buyer_id
+        )
+
+    if status is not None:
+        query = query.where(
+            Order.status == status
+        )
+
+    if q and q.strip():
+
+        keyword = q.strip()
+
+        condition = or_(
+            Order.receiver_phone.contains(keyword),
+            Order.recipient.contains(keyword)
+        )
+
+        order_id = _parse_order_code(keyword)
+
+        if order_id is not None:
+            condition = or_(
+                condition,
+                Order.id == order_id
+            )
+
+        query = query.where(condition)
+
+    return list(
+        db.scalars(
+            query.offset(skip).limit(limit)
+        )
+    )
+
+
+def get_order(
+    db: Session,
+    order_id: int
+) -> Order | None:
+
+    return db.get(Order, order_id)

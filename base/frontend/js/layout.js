@@ -1,33 +1,80 @@
-// Layout chung: tự chèn header (menu) và footer vào mọi trang,
-// để không phải copy lại HTML menu ở từng file.
-//
-// Mỗi trang cần có:  <body data-root="./">   (trang ở thư mục gốc)
-//              hoặc  <body data-root="../">  (trang trong thư mục pages/)
-// và hai thẻ rỗng:   <header id="app-header"></header> ... <footer id="app-footer"></footer>
-
-// Thêm trang mới vào menu: thêm 1 dòng vào mảng này (đường dẫn tính từ thư mục frontend/)
-// js/layout.js
-
-// Thêm trang Giỏ hàng vào menu
+﻿
 const MENU = [
-  { href: "index.html", label: "Trang chủ" },
-  { href: "pages/items.html", label: "Items (CRUD mẫu)" },
-  { href: "pages/cart.html", label: "Giỏ hàng" },
+  {
+    href: "index.html",
+    label: "Trang chủ"
+  },
+  {
+    href: "pages/products.html",
+    label: "Sản phẩm"
+  },
+  {
+    href: "pages/items.html",
+    label: "Items"
+  },
+  {
+    href: "pages/cart.html",
+    label: "Giỏ hàng"
+  },
+  {
+    href: "pages/auth.html",
+    label: "Đăng nhập / Đăng ký"
+  },
+  {
+    href: "pages/profile.html",
+    label: "Hồ sơ"
+  },
+  {
+    href: "pages/address.html",
+    label: "Sổ địa chỉ"
+  },
 ];
 
-// Hàm đếm tổng số lượng sản phẩm trong giỏ
-function getCartCount() {
-  const cart = JSON.parse(localStorage.getItem("cart") || "[]");
-  return cart.reduce((total, item) => total + item.quantity, 0);
+let cartBadgeRequest = 0;
+
+// Lấy số lượng giỏ hàng từ Backend.
+async function getCartCount() {
+  if (!localStorage.getItem("token")) {
+    return 0;
+  }
+
+  const cart = await api.get("/cart");
+
+  return (cart.items || []).reduce(
+    (total, item) =>
+      total + Math.max(0, Number(item.quantity) || 0),
+    0
+  );
 }
 
-// Hàm cập nhật badge trên header
-window.updateCartBadge = function() {
+// Cập nhật số lượng trên header.
+window.updateCartBadge = async function () {
   const badge = document.getElementById("cart-badge");
-  if (badge) {
-    const count = getCartCount();
+
+  if (!badge) return;
+
+  const requestId = ++cartBadgeRequest;
+
+  try {
+    const count = await getCartCount();
+
+    if (requestId !== cartBadgeRequest) return;
+
     badge.textContent = count;
-    badge.style.display = count > 0 ? "inline-block" : "none";
+
+    badge.style.display =
+      count > 0 ? "inline-block" : "none";
+
+  } catch (error) {
+    if (requestId !== cartBadgeRequest) return;
+
+    badge.textContent = "0";
+    badge.style.display = "none";
+
+    console.warn(
+      "Không thể tải số lượng giỏ hàng:",
+      error.message
+    );
   }
 };
 
@@ -35,34 +82,104 @@ function renderLayout() {
   const root = document.body.dataset.root || "./";
   const currentPath = window.location.pathname;
 
+  const hasToken = Boolean(
+    localStorage.getItem("token")
+  );
+
   const links = MENU.map((item) => {
-    const isActive = currentPath.endsWith("/" + item.href) ||
-      (item.href === "index.html" && currentPath.endsWith("/"));
-    
-    // Thêm badge cho riêng mục Giỏ hàng
+    const isActive =
+      currentPath.endsWith("/" + item.href) ||
+      (
+        item.href === "index.html" &&
+        currentPath.endsWith("/")
+      );
+
     let badgeHtml = "";
+
     if (item.href === "pages/cart.html") {
-      badgeHtml = `<span id="cart-badge" class="cart-badge" style="display:none;">0</span>`;
+      badgeHtml = `
+        <span
+          id="cart-badge"
+          class="cart-badge"
+          style="display:none;"
+        >0</span>
+      `;
     }
 
-    return `<a href="${root}${item.href}" class="${isActive ? "active" : ""}">
-      ${item.label} ${badgeHtml}
-    </a>`;
+    return `
+      <a
+        href="${root}${item.href}"
+        class="${isActive ? "active" : ""}"
+      >
+        ${item.label}
+        ${badgeHtml}
+      </a>
+    `;
   }).join("");
 
-  document.getElementById("app-header").innerHTML = `
-    <div class="container header-inner">
-      <a href="${root}index.html" class="brand">
-        <img src="${root}assets/images/logo.svg" alt="logo" width="28" height="28">
-        <span>${CONFIG.APP_NAME}</span>
-      </a>
-      <nav class="nav">${links}</nav>
-    </div>`;
+  const logoutHtml = hasToken
+    ? `
+      <button
+        id="btn-logout"
+        type="button"
+        class="btn btn-small btn-danger"
+      >
+        Đăng xuất
+      </button>
+    `
+    : "";
 
-  document.getElementById("app-footer").innerHTML = `
-    <div class="container">© ${new Date().getFullYear()} HN-KS25-CNTT1 · Base code thực tập doanh nghiệp</div>`;
+  const header = document.getElementById("app-header");
 
-  // Cập nhật số lượng giỏ hàng ngay sau khi render header
+  if (header) {
+    header.innerHTML = `
+      <div class="container header-inner">
+
+        <a href="${root}index.html" class="brand">
+
+          <img
+            src="${root}assets/images/logo.svg"
+            alt="logo"
+            width="28"
+            height="28"
+          >
+
+          <span>${CONFIG.APP_NAME}</span>
+
+        </a>
+
+        <nav class="nav">
+          ${links}
+          ${logoutHtml}
+        </nav>
+
+      </div>
+    `;
+  }
+
+  const footer = document.getElementById("app-footer");
+
+  if (footer) {
+    footer.innerHTML = `
+      <div class="container">
+        © ${new Date().getFullYear()}
+        HN-KS25-CNTT1 · Base code thực tập doanh nghiệp
+      </div>
+    `;
+  }
+
+  const btnLogout = document.getElementById("btn-logout");
+
+  if (btnLogout) {
+    btnLogout.addEventListener("click", () => {
+      localStorage.removeItem("token");
+      sessionStorage.removeItem("unimarket_user_id");
+
+      window.location.href =
+        `${root}pages/auth.html`;
+    });
+  }
+
   window.updateCartBadge();
 }
 

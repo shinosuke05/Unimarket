@@ -1,88 +1,102 @@
+"""API đăng ký, đăng nhập và thông tin tài khoản."""
+
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.db.session import get_db
+from app.core.security import create_access_token, verify_password
 from app.crud import user as user_crud
-from app.schemas.auth import RegisterRequest, UserResponse
-from app.core.dependencies import get_current_user
+from app.db.session import get_db
+from app.deps import get_current_user
 from app.models.user import User
-from app.core.security import verify_password, create_access_token
+from app.schemas.auth import (
+    RegisterRequest,
+    LoginRequest,
+    UserResponse,
+    UserOut,
+    TokenOut,
+)
 
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
+
 
 @router.post(
     "/register",
     response_model=UserResponse,
     status_code=status.HTTP_201_CREATED
 )
-def register(data: RegisterRequest, db: Session = Depends(get_db)):
+def register(
+    data: RegisterRequest,
+    db: Session = Depends(get_db)
+):
+    data.email = data.email.strip().lower()
 
-    data.email = data.email.lower()
-
-    existing_user = user_crud.get_user_by_email(db, data.email)
+    existing_user = user_crud.get_user_by_email(
+        db, data.email
+    )
 
     if existing_user:
         raise HTTPException(
             status_code=400,
-            detail="Email da duoc dang ky"
+            detail="Email đã được đăng ký"
+        )
+
+    if len(data.password.encode("utf-8")) > 72:
+        raise HTTPException(
+            status_code=422,
+            detail="Mật khẩu không được vượt quá 72 byte"
         )
 
     try:
         user = user_crud.create_user(db, data)
     except IntegrityError:
         db.rollback()
+
         raise HTTPException(
             status_code=400,
-            detail="Email da duoc dang ky"
+            detail="Email đã được đăng ký"
         )
 
     return user
 
 
-@router.get("/me", response_model=UserResponse)
-def get_my_profile(
-    current_user: User = Depends(get_current_user)
+@router.post("/login", response_model=TokenOut)
+def login(
+    data: LoginRequest,
+    db: Session = Depends(get_db)
 ):
-    return current_user
-
-from pydantic import BaseModel, EmailStr
-
-
-class LoginRequest(BaseModel):
-    email: EmailStr
-    password: str
-
-
-@router.post("/login")
-def login(data: LoginRequest, db: Session = Depends(get_db)):
-
-    user = db.query(User).filter(
-        User.email == data.email
-    ).first()
-
-    if not user:
-        raise HTTPException(
-            status_code=401,
-            detail="Email hoac mat khau khong dung"
+    user = db.scalar(
+        select(User).where(
+            User.email == data.email.strip().lower()
         )
+    )
 
-    if not verify_password(data.password, user.password_hash):
+    if user is None or not verify_password(
+        data.password, user.password_hash
+    ):
         raise HTTPException(
             status_code=401,
-            detail="Email hoac mat khau khong dung"
+            detail="Sai email hoặc mật khẩu"
         )
 
     if not user.is_active:
         raise HTTPException(
             status_code=403,
-            detail="Tai khoan da bi khoa"
+            detail="Tài khoản đã bị khóa"
         )
 
-    token = create_access_token({"sub": str(user.id)})
+    return TokenOut(
+        access_token=create_access_token(
+            {"sub": str(user.id)}
+        ),
+        user=UserOut.model_validate(user)
+    )
 
-    return {
-        "access_token": token,
-        "token_type": "bearer"
-    }
+
+@router.get("/me", response_model=UserOut)
+def me(
+    user: User = Depends(get_current_user)
+):
+    return user

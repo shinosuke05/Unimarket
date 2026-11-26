@@ -1,112 +1,422 @@
-// js/pages/checkout.js
 
-document.addEventListener("DOMContentLoaded", () => {
-    renderSummary();
+"use strict";
 
-    // Lắng nghe sự kiện submit form
-    document.getElementById("checkout-form").addEventListener("submit", handleCheckout);
-});
+const checkoutState = {
+    items: [],
+    addresses: [],
+    buyNow: false,
+    loading: false,
+    ready: false
+};
 
-// Hàm lấy giỏ hàng
-function getCart() {
-    return JSON.parse(localStorage.getItem("cart") || "[]");
+const checkoutEl = id => document.getElementById(id);
+
+// Đồng bộ với DEFAULT_SHIPPING_FEE của Backend.
+const SHIPPING_FEE = 0;
+
+function checkoutError(message = "") {
+    checkoutEl("checkout-error").textContent = message;
 }
 
-// Tính toán và hiển thị tóm tắt đơn hàng
-function renderSummary() {
-    const cart = getCart();
-    const summaryContainer = document.getElementById("checkout-summary-items");
+// ==================== ĐỊA CHỈ ====================
 
-    if (cart.length === 0) {
-        summaryContainer.innerHTML = `<p class="muted">Giỏ hàng trống. <a href="items.html">Quay lại mua sắm</a></p>`;
+async function loadAddresses() {
+    const addresses = await api.get("/addresses");
+
+    checkoutState.addresses = addresses || [];
+
+    const select = checkoutEl("address-select");
+
+    select.replaceChildren(
+        new Option("-- Chọn địa chỉ --", "")
+    );
+
+    checkoutState.addresses.forEach(address => {
+        const label =
+            `${address.recipient_name} - ` +
+            `${address.street_address} - ` +
+            `${address.phone}`;
+
+        select.add(
+            new Option(label, String(address.id))
+        );
+    });
+
+    const defaultAddress =
+        checkoutState.addresses.find(
+            address => address.is_default
+        ) || checkoutState.addresses[0];
+
+    if (defaultAddress) {
+        select.value = String(defaultAddress.id);
+        fillAddress();
+    }
+}
+
+function fillAddress() {
+    const addressId = Number(
+        checkoutEl("address-select").value
+    );
+
+    const address = checkoutState.addresses.find(
+        item => Number(item.id) === addressId
+    );
+
+    if (!address) return;
+
+    checkoutEl("receiver-name").value =
+        address.recipient_name || "";
+
+    checkoutEl("receiver-phone").value =
+        address.phone || "";
+}
+
+// ==================== SẢN PHẨM ====================
+
+async function loadCheckoutItems() {
+    const params = new URLSearchParams(
+        window.location.search
+    );
+
+    checkoutState.buyNow =
+        params.get("mode") === "buy-now";
+
+    if (checkoutState.buyNow) {
+        const itemId = Number(params.get("item_id"));
+        const quantity = Number(
+            params.get("quantity") || 1
+        );
+
+        if (
+            !Number.isSafeInteger(itemId) ||
+            itemId < 1 ||
+            !Number.isSafeInteger(quantity) ||
+            quantity < 1 ||
+            quantity > 999
+        ) {
+            throw new Error(
+                "Thông tin sản phẩm không hợp lệ."
+            );
+        }
+
+        const item = await api.get(`/items/${itemId}`);
+
+        if (
+            item.status !== "AVAILABLE" ||
+            Number(item.quantity) < quantity
+        ) {
+            throw new Error(
+                "Sản phẩm không còn đủ số lượng."
+            );
+        }
+
+        checkoutState.items = [{
+            product_id: item.id,
+            product_name: item.name,
+            price: Number(item.price),
+            quantity
+        }];
+
+    } else {
+        const cart = await api.get("/cart");
+
+        checkoutState.items = cart.items || [];
+    }
+}
+
+// ==================== TÓM TẮT ====================
+
+function renderSummary() {
+    const container = checkoutEl(
+        "checkout-summary-items"
+    );
+
+    const items = checkoutState.items;
+
+    if (!items.length) {
+        container.innerHTML = `
+            <p class="muted">
+                Giỏ hàng đang trống.
+                <a href="cart.html">Về giỏ hàng</a>
+            </p>
+        `;
+
+        checkoutEl("checkout-submit").disabled = true;
         return;
     }
 
     let subtotal = 0;
-    let html = cart.map(item => {
-        const itemTotal = item.price * item.quantity;
-        subtotal += itemTotal;
+
+    let html = items.map(item => {
+        const total =
+            Number(item.price) * Number(item.quantity);
+
+        subtotal += total;
+
         return `
             <div class="summary-item">
-                <span>${escapeHtml(item.name)} <strong style="color:var(--color-muted)">x${item.quantity}</strong></span>
-                <span>${formatMoney(itemTotal)}</span>
+
+                <span>
+                    ${escapeHtml(item.product_name)}
+                    x${Number(item.quantity)}
+                </span>
+
+                <span>${formatMoney(total)}</span>
+
             </div>
         `;
     }).join("");
 
-    // Phí ship mặc định (Giao hàng tận nơi)
-    const shippingFee = 30000; 
-    
+    const shipping = document.querySelector(
+        'input[name="shipping"]:checked'
+    ).value;
+
+    const shippingFee =
+        shipping === "delivery" ? SHIPPING_FEE : 0;
+
     html += `
-        <div class="summary-item" style="margin-top: 16px; border-top: 1px dashed var(--color-border); padding-top: 16px;">
+        <div class="summary-item"
+             style="margin-top:16px;">
+
             <span>Tạm tính</span>
             <span>${formatMoney(subtotal)}</span>
+
         </div>
+
         <div class="summary-item">
+
             <span>Phí vận chuyển</span>
             <span>${formatMoney(shippingFee)}</span>
+
         </div>
+
         <div class="summary-total">
+
             <span>Tổng cộng</span>
-            <span class="text-primary">${formatMoney(subtotal + shippingFee)}</span>
+
+            <span class="text-primary">
+                ${formatMoney(subtotal + shippingFee)}
+            </span>
+
         </div>
     `;
 
-    summaryContainer.innerHTML = html;
+    container.innerHTML = html;
 }
 
-// Xử lý khi bấm nút "Xác nhận Đặt hàng"
+function updateShipping() {
+    const shipping = document.querySelector(
+        'input[name="shipping"]:checked'
+    ).value;
+
+    const isDelivery = shipping === "delivery";
+
+    checkoutEl("shipping-address-group").hidden =
+        !isDelivery;
+
+    checkoutEl("address-select").required =
+        isDelivery;
+
+    renderSummary();
+}
+
+// ==================== ĐẶT HÀNG ====================
+
 async function handleCheckout(event) {
     event.preventDefault();
-    
-    const addressId = document.getElementById("address-select").value;
-    if (!addressId) {
-        showToast("Vui lòng chọn địa chỉ nhận hàng!", "error");
+
+    if (
+        checkoutState.loading ||
+        !checkoutState.ready ||
+        !checkoutState.items.length
+    ) return;
+
+    checkoutError();
+
+    const shipping = document.querySelector(
+        'input[name="shipping"]:checked'
+    ).value;
+
+    const payment = document.querySelector(
+        'input[name="payment"]:checked'
+    ).value;
+
+    const receiverName =
+        checkoutEl("receiver-name").value.trim();
+
+    const receiverPhone =
+        checkoutEl("receiver-phone").value.trim();
+
+    if (
+        receiverName.length < 2 ||
+        receiverPhone.length < 8
+    ) {
+        checkoutError(
+            "Vui lòng nhập đầy đủ thông tin người nhận."
+        );
         return;
     }
 
-    const paymentMethod = document.querySelector('input[name="payment"]:checked').value;
-    const shippingMethod = document.querySelector('input[name="shipping"]:checked').value;
-    const cart = getCart();
+    let shippingAddress = null;
 
-    if (cart.length === 0) {
-        showToast("Giỏ hàng trống, không thể đặt hàng!", "error");
-        return;
+    if (shipping === "delivery") {
+        const addressId = Number(
+            checkoutEl("address-select").value
+        );
+
+        const address = checkoutState.addresses.find(
+            item => Number(item.id) === addressId
+        );
+
+        if (!address) {
+            checkoutError(
+                "Vui lòng chọn địa chỉ nhận hàng."
+            );
+            return;
+        }
+
+        shippingAddress = address.street_address;
     }
 
-    // Giả lập gọi API tạo đơn hàng (Bạn có thể thay bằng api.post('/orders', data) sau này)
-    const btnSubmit = event.target.querySelector('button[type="submit"]');
-    btnSubmit.disabled = true;
-    btnSubmit.textContent = "Đang xử lý...";
+    const data = {
+        receiver_name: receiverName,
+        receiver_phone: receiverPhone,
+
+        fulfillment_type:
+            shipping === "delivery"
+                ? "DELIVERY"
+                : "PICKUP",
+
+        payment_method:
+            payment === "cod"
+                ? "COD"
+                : "BANK_TRANSFER",
+
+        shipping_address: shippingAddress,
+
+        note:
+            checkoutEl("order-note").value.trim()
+            || null
+    };
+
+    const button = checkoutEl("checkout-submit");
+
+    checkoutState.loading = true;
+    button.disabled = true;
+    button.textContent = "Đang xử lý...";
+
+    let submitted = false;
 
     try {
-        // Giả lập độ trễ mạng 1 giây
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        let order;
 
-        // Tạo mã đơn hàng giả lập
-        const orderId = "ORD" + Math.floor(Math.random() * 1000000);
-        const orderData = {
-            orderId: orderId,
-            addressId,
-            shippingMethod,
-            paymentMethod,
-            items: cart,
-            status: "success" // Giả lập luôn thành công
-        };
+        if (checkoutState.buyNow) {
+            data.items = checkoutState.items.map(
+                item => ({
+                    item_id: Number(item.product_id),
+                    quantity: Number(item.quantity)
+                })
+            );
 
-        // Lưu trạng thái đơn hàng vào localStorage để trang kết quả đọc
-        localStorage.setItem("last_order", JSON.stringify(orderData));
-        
-        // Xoá giỏ hàng sau khi đặt thành công
-        localStorage.removeItem("cart");
-        if (window.updateCartBadge) window.updateCartBadge();
+            order = await api.post(
+                "/orders/buy-now",
+                data
+            );
 
-        // Điều hướng sang trang kết quả
-        window.location.href = `order-result.html?orderId=${orderId}`;
+        } else {
+            order = await api.post(
+                "/orders/checkout",
+                data
+            );
+        }
+
+        submitted = true;
+
+        if (!order || !order.id) {
+            throw new Error(
+                "Không nhận được mã đơn hàng. " +
+                "Hãy kiểm tra lịch sử đơn hàng."
+            );
+        }
+
+        window.location.href =
+            `order-result.html?orderId=${encodeURIComponent(order.id)}`;
 
     } catch (error) {
-        showToast("Có lỗi xảy ra khi đặt hàng. Vui lòng thử lại.", "error");
-        btnSubmit.disabled = false;
-        btnSubmit.textContent = "Xác nhận Đặt hàng";
+        if (submitted || error.status === 0 ||
+            error.status >= 500) {
+            checkoutError(
+                "Chưa xác định được kết quả đặt hàng. " +
+                "Hãy kiểm tra lịch sử đơn hàng trước khi thử lại."
+            );
+
+            checkoutState.ready = false;
+        } else {
+            checkoutError(
+                error.message || "Không thể đặt hàng."
+            );
+        }
+    } finally {
+        checkoutState.loading = false;
+
+        button.disabled = !checkoutState.ready;
+
+        button.textContent = "Xác nhận Đặt hàng";
     }
 }
+
+// ==================== KHỞI TẠO ====================
+
+async function initCheckout() {
+    if (!localStorage.getItem("token")) {
+        window.location.href = "auth.html";
+        return;
+    }
+
+    checkoutEl("checkout-form").addEventListener(
+        "submit",
+        handleCheckout
+    );
+
+    checkoutEl("address-select").addEventListener(
+        "change",
+        fillAddress
+    );
+
+    document.querySelectorAll(
+        'input[name="shipping"]'
+    ).forEach(input => {
+        input.addEventListener(
+            "change",
+            updateShipping
+        );
+    });
+
+    try {
+        await Promise.all([
+            loadAddresses(),
+            loadCheckoutItems()
+        ]);
+
+        checkoutState.ready =
+            checkoutState.items.length > 0;
+
+        updateShipping();
+
+        checkoutEl("checkout-submit").disabled =
+            !checkoutState.ready;
+
+    } catch (error) {
+        checkoutError(error.message);
+
+        checkoutEl("checkout-summary-items").textContent =
+            "Không thể tải thông tin đơn hàng.";
+
+        checkoutEl("checkout-submit").disabled = true;
+    }
+}
+
+document.addEventListener(
+    "DOMContentLoaded",
+    initCheckout
+);
