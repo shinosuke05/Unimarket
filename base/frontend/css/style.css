@@ -1626,3 +1626,58 @@ main.container.products-page {
   outline-offset: 4px;
   border-radius: 12px;
 }
+
+
+
+/* ===== FIX PRODUCT QUANTITY BUTTONS ===== */
+
+.quantity-control button,
+#quantity-minus,
+#quantity-plus {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+
+  width: 44px;
+  height: 44px;
+  padding: 0;
+
+  background: #f1f5f9 !important;
+  color: #1e293b !important;
+
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1;
+
+  cursor: pointer;
+  opacity: 1;
+
+  transition: all 0.15s ease;
+}
+
+.quantity-control button:hover:not(:disabled),
+#quantity-minus:hover:not(:disabled),
+#quantity-plus:hover:not(:disabled) {
+  background: #2563eb !important;
+  color: #ffffff !important;
+  border-color: #2563eb;
+}
+
+.quantity-control button:disabled,
+#quantity-minus:disabled,
+#quantity-plus:disabled {
+  background: #f8fafc !important;
+  color: #94a3b8 !important;
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+#product-quantity-input {
+  text-align: center;
+  color: #1e293b;
+  font-size: 18px;
+  font-weight: 500;
+}
