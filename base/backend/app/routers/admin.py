@@ -26,7 +26,7 @@ def stats(db: Session = Depends(get_db)):
         "items_available": _count(db, Item, alive, Item.status == ProductStatus.AVAILABLE),
         "items_sold": _count(db, Item, alive, Item.status == ProductStatus.SOLD),
         "items_hidden": _count(db, Item, alive, Item.status == ProductStatus.HIDDEN),
-        "customers_total": _count(db, User, User.role == UserRole.USER),
+        "customers_total": _count(db, User, User.role == UserRole.CUSTOMER),
     }
 
 

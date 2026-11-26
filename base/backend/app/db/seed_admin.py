@@ -28,7 +28,7 @@ def seed_admin() -> None:
         admin = User(
             full_name=settings.ADMIN_NAME,
             email=settings.ADMIN_EMAIL,
-            password=hash_password(settings.ADMIN_PASSWORD),
+            password_hash=hash_password(settings.ADMIN_PASSWORD),
             role=UserRole.ADMIN,
             is_active=True,
         )

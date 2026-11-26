@@ -8,7 +8,7 @@ from enum import Enum
 # Vai trò người dùng
 class UserRole(str, Enum):
     ADMIN = "ADMIN"
-    USER = "USER"
+    CUSTOMER = "CUSTOMER"
 
 
 # Tình trạng sử dụng của sản phẩm

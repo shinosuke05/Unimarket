@@ -1,8 +1,6 @@
-
 """Đọc cấu hình từ file .env hoặc biến môi trường."""
 
-"""Đọc cấu hình từ file .env hoặc biến môi trường."""
-
+from pathlib import Path
 from urllib.parse import quote_plus
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -15,9 +13,8 @@ class Settings(BaseSettings):
         extra="ignore"
     )
 
-    APP_NAME: str = "Unimarket API"
+    APP_NAME: str = "UniMarket API"
 
-    # Database
     # Database
     DB_HOST: str = "127.0.0.1"
     DB_PORT: int = 3306
@@ -25,7 +22,6 @@ class Settings(BaseSettings):
     DB_PASSWORD: str = ""
     DB_NAME: str = "app_db"
 
-    # CORS
     # CORS
     CORS_ORIGINS: str = "*"
 
@@ -35,19 +31,16 @@ class Settings(BaseSettings):
     ADMIN_NAME: str = "System Admin"
 
     # JWT
-    SECRET_KEY: str = ""
+    SECRET_KEY: str
+    JWT_SECRET_KEY: str = ""
     JWT_ALGORITHM: str = "HS256"
+    JWT_EXPIRE_MINUTES: int = 60
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 480
 
-    # Admin
-    ADMIN_EMAIL: str = ""
-    ADMIN_PASSWORD: str = ""
-    ADMIN_NAME: str = "System Admin"
-
-    # JWT
-    SECRET_KEY: str = ""
-    JWT_ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 480
+    # Upload ảnh
+    UPLOAD_DIR: str = "uploads"
+    MAX_IMAGE_MB: int = 2
+    MAX_IMAGES_PER_ITEM: int = 5
 
     @property
     def database_url(self) -> str:
@@ -65,20 +58,9 @@ class Settings(BaseSettings):
             for origin in self.CORS_ORIGINS.split(",")
             if origin.strip()
         ]
-        return [
-            origin.strip()
-            for origin in self.CORS_ORIGINS.split(",")
-            if origin.strip()
-        ]
-        # Upload ảnh
-    UPLOAD_DIR: str = "uploads"
-    MAX_IMAGE_MB: int = 2
-    MAX_IMAGES_PER_ITEM: int = 5
 
     @property
-    def upload_path(self):
-        from pathlib import Path
-        # backend/ (cha của thư mục app/) + UPLOAD_DIR
+    def upload_path(self) -> Path:
         return Path(__file__).resolve().parents[2] / self.UPLOAD_DIR
 
 

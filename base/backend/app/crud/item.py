@@ -1,10 +1,10 @@
-"""CRUD = các hàm đọc/ghi DB cho bảng items. Router gọi vào đây, không viết SQL trong router."""
+"""CRUD cho bảng items."""
+
 from datetime import datetime
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.core.enum import ProductStatus
 from app.core.enum import ProductStatus
 from app.models.item import Item
 from app.schemas.item import ItemCreate, ItemUpdate
@@ -23,69 +23,80 @@ def get_items(
     category_id: int | None = None,
     include_hidden: bool = False,
 ) -> list[Item]:
-    """Luôn bỏ sản phẩm đã xoá mềm. include_hidden=True dành cho admin."""
-    query = select(Item).where(Item.deleted_at.is_(None)).order_by(Item.id.desc())
+
+    query = (
+        select(Item)
+        .where(Item.deleted_at.is_(None))
+        .order_by(Item.id.desc())
+    )
+
     if not include_hidden:
         query = query.where(Item.status != ProductStatus.HIDDEN)
+
     if keyword:
         query = query.where(Item.name.contains(keyword))
+
     if status:
         query = query.where(Item.status == status)
+
     if category_id is not None:
         query = query.where(Item.category_id == category_id)
-    if status:
-        query = query.where(Item.status == status)
-    if category_id is not None:
-        query = query.where(Item.category_id == category_id)
+
     return list(db.scalars(query))
 
 
 def get_item(db: Session, item_id: int) -> Item | None:
     item = db.get(Item, item_id)
+
     if item is None or item.deleted_at is not None:
         return None
-    return item
-    item = db.get(Item, item_id)
-    if item is None or item.deleted_at is not None:
-        return None
+
     return item
 
 
 def create_item(db: Session, data: ItemCreate) -> Item:
     item = Item(**data.model_dump())
+
     _normalize(item)
-    _normalize(item)
+
     db.add(item)
     db.commit()
     db.refresh(item)
+
     return item
 
 
-def update_item(db: Session, item: Item, data: ItemUpdate) -> Item:
+def update_item(
+    db: Session,
+    item: Item,
+    data: ItemUpdate
+) -> Item:
+
     for field, value in data.model_dump(exclude_unset=True).items():
         setattr(item, field, value)
+
     _normalize(item)
-    _normalize(item)
+
     db.commit()
     db.refresh(item)
+
     return item
 
 
-def set_status(db: Session, item: Item, status: ProductStatus) -> Item:
+def set_status(
+    db: Session,
+    item: Item,
+    status: ProductStatus
+) -> Item:
+
     item.status = status
-def set_status(db: Session, item: Item, status: ProductStatus) -> Item:
-    item.status = status
+
     db.commit()
     db.refresh(item)
-    return item
 
-    db.refresh(item)
     return item
 
 
-def soft_delete_item(db: Session, item: Item) -> None:
-    item.deleted_at = datetime.now()
-    db.commit()
 def soft_delete_item(db: Session, item: Item) -> None:
     item.deleted_at = datetime.now()
     db.commit()

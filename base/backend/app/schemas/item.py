@@ -21,7 +21,6 @@ def _clean_name(value: str | None) -> str | None:
 
 class ItemBase(BaseModel):
     name: str = Field(min_length=1, max_length=255, examples=["Giáo trình Giải tích 1"])
-    name: str = Field(min_length=1, max_length=255, examples=["Giáo trình Giải tích 1"])
     description: str | None = Field(default=None, examples=["Mô tả ngắn"])
     price: Decimal = Field(
         default=0, ge=0, le=MAX_PRICE, max_digits=12, decimal_places=2, examples=[45000]
@@ -77,6 +76,6 @@ class ItemOut(ItemBase):
 
     id: int
     price: float
-    images: list[ItemImageOut] = []  
+    images: list[ItemImageOut] = []
     created_at: datetime
     updated_at: datetime
