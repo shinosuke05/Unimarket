@@ -1,7 +1,8 @@
+"""Model bảng users."""
 
 from datetime import datetime
 
-from sqlalchemy import String, Boolean, DateTime, Enum, func
+from sqlalchemy import Boolean, DateTime, Enum, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.session import Base
@@ -19,7 +20,8 @@ class User(Base):
 
     email: Mapped[str] = mapped_column(
         String(255),
-        unique=True
+        unique=True,
+        nullable=False
     )
 
     phone: Mapped[str | None] = mapped_column(

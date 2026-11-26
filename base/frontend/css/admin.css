@@ -1,0 +1,155 @@
+:root {
+  --primary: #2563eb;
+  --bg: #f3f4f6;
+  --card: #ffffff;
+  --text: #111827;
+  --muted: #6b7280;
+  --border: #e5e7eb;
+  --sidebar: #111827;
+  --sidebar-text: #d1d5db;
+  --sidebar-w: 240px;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); }
+
+/* Ẩn trang cho tới khi xác minh xong quyền admin (tránh nháy giao diện) */
+body[data-page] { visibility: hidden; }
+body[data-page].ready { visibility: visible; }
+
+.admin-shell { display: flex; min-height: 100vh; }
+
+.sidebar {
+  width: var(--sidebar-w); background: var(--sidebar); color: var(--sidebar-text);
+  position: fixed; inset: 0 auto 0 0; z-index: 30; overflow-y: auto;
+  transition: transform .25s ease;
+}
+.brand { padding: 20px; font-weight: 700; font-size: 18px; color: #fff; border-bottom: 1px solid #1f2937; }
+.sidebar nav { display: flex; flex-direction: column; padding: 12px; gap: 4px; }
+.sidebar a {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+  color: inherit; text-decoration: none; border-radius: 8px;
+}
+.sidebar a:hover { background: #1f2937; }
+.sidebar a.active { background: var(--primary); color: #fff; }
+
+.backdrop { display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, .45); z-index: 20; }
+
+.main-col { flex: 1; min-width: 0; margin-left: var(--sidebar-w); display: flex; flex-direction: column; }
+.topbar {
+  display: flex; align-items: center; gap: 12px; padding: 12px 20px;
+  background: var(--card); border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 10;
+}
+.topbar h1 { font-size: 18px; margin: 0; flex: 1; }
+.topbar .user { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--muted); }
+#menuBtn { display: none; font-size: 20px; background: none; border: 0; cursor: pointer; padding: 4px 8px; }
+
+button.btn, #logoutBtn {
+  background: var(--primary); color: #fff; border: 0; border-radius: 8px;
+  padding: 8px 14px; cursor: pointer; font-size: 14px;
+}
+#logoutBtn { background: #ef4444; }
+
+.content { padding: 20px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
+.card .label { color: var(--muted); font-size: 14px; }
+.card .value { font-size: 30px; font-weight: 700; margin-top: 6px; }
+.card + .card, .grid + .card { margin-top: 16px; }
+
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; min-width: 520px; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 14px; white-space: nowrap; }
+th { color: var(--muted); font-weight: 600; }
+
+.error { color: #dc2626; font-size: 14px; min-height: 20px; }
+.ok { color: #16a34a; font-size: 14px; min-height: 20px; }
+.placeholder { color: var(--muted); text-align: center; padding: 40px 10px; }
+
+/* Màn hình đăng nhập */
+.login-box { max-width: 380px; margin: 10vh auto; padding: 0 16px; }
+.login-box form { display: flex; flex-direction: column; gap: 12px; }
+.login-box input { padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 15px; }
+
+/* Form + nút trong trang quản lý */
+.toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: end; }
+.toolbar + .toolbar { margin-top: 12px; }
+.field { display: flex; flex-direction: column; gap: 4px; flex: 1 1 200px; font-size: 14px; }
+.field label { color: var(--muted); }
+.field input, .field select, .field textarea {
+  padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px;
+  font-size: 15px; font-family: inherit; background: #fff;
+}
+button.btn-secondary { background: #e5e7eb; color: var(--text); border: 0; border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: 14px; }
+button.btn-danger { background: #ef4444; color: #fff; border: 0; border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 13px; }
+button.btn-sm { background: var(--primary); color: #fff; border: 0; border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 13px; }
+button:disabled { opacity: .45; cursor: not-allowed; }
+td.actions { display: flex; gap: 6px; }
+
+/* Nhãn trạng thái sản phẩm */
+.badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; background: #e5e7eb; }
+.badge.AVAILABLE { background: #dcfce7; color: #166534; }
+.badge.SOLD { background: #fee2e2; color: #991b1b; }
+.badge.HIDDEN { background: #fef3c7; color: #92400e; }
+
+/* Ảnh sản phẩm */
+.img-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin-top: 14px; }
+.img-card { border: 1px solid var(--border); border-radius: 10px; padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+.img-card img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 6px; background: #f3f4f6; }
+.img-card.primary { border-color: var(--primary); box-shadow: 0 0 0 2px #bfdbfe; }
+.img-card .row { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* Responsive: màn hình <= 900px thì sidebar thành menu trượt */
+@media (max-width: 900px) {
+  .sidebar { transform: translateX(-100%); }
+  body.menu-open .sidebar { transform: translateX(0); }
+  body.menu-open .backdrop { display: block; }
+  .main-col { margin-left: 0; }
+  #menuBtn { display: inline-block; }
+  .topbar .user span { display: none; }
+  .content { padding: 14px; }
+}
+/* ===== Quản lý sản phẩm ===== */
+.filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: end; }
+.filters .field { flex: 1 1 150px; }
+.filters .field.grow { flex: 2 1 220px; }
+.filters .spacer { flex: 1 1 0; }
+
+.thumb { width: 52px; height: 52px; border-radius: 8px; object-fit: cover; background: #f3f4f6; display: block; }
+.thumb.empty { display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 11px; }
+.rtable td.name { white-space: normal; min-width: 160px; font-weight: 600; }
+.rtable td.actions { flex-wrap: wrap; }
+
+.pager { display: flex; gap: 8px; align-items: center; justify-content: space-between; margin-top: 12px; font-size: 14px; color: var(--muted); flex-wrap: wrap; }
+.pager .btns { display: flex; gap: 6px; }
+
+/* Hộp thoại form */
+dialog.modal { border: 0; border-radius: 14px; padding: 0; width: min(760px, 94vw); max-height: 92vh; color: var(--text); }
+dialog.modal::backdrop { background: rgba(0, 0, 0, .5); }
+.modal-head { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: #fff; z-index: 1; }
+.modal-head h3 { margin: 0; font-size: 17px; }
+.modal-body { padding: 18px; }
+.modal-foot { display: flex; gap: 8px; justify-content: flex-end; padding: 14px 18px; border-top: 1px solid var(--border); position: sticky; bottom: 0; background: #fff; }
+.form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.form-grid .full { grid-column: 1 / -1; }
+.form-grid .field { flex: none; }
+.field textarea { resize: vertical; min-height: 70px; }
+.hint { color: var(--muted); font-size: 13px; margin: 4px 0 0; }
+.gallery-head { display: flex; justify-content: space-between; align-items: center; margin: 18px 0 4px; gap: 8px; flex-wrap: wrap; }
+.gallery-head h4 { margin: 0; }
+.img-card .tag { font-size: 12px; color: var(--muted); }
+
+/* Màn hình nhỏ: bảng thành dạng thẻ */
+@media (max-width: 700px) {
+  .form-grid { grid-template-columns: 1fr; }
+  .rtable { min-width: 0; }
+  .rtable thead { display: none; }
+  .rtable tr { display: block; border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; margin-bottom: 10px; }
+  .rtable td { display: flex; justify-content: space-between; align-items: center; gap: 12px; border: 0; padding: 6px 0; white-space: normal; }
+  .rtable td::before { content: attr(data-label); color: var(--muted); font-size: 13px; flex: 0 0 90px; }
+  .rtable td.actions { justify-content: flex-start; }
+  .rtable td.actions::before { display: none; }
+  .filters .btn, .filters .btn-secondary { flex: 1 1 100%; }
+  dialog.modal { width: 100vw; max-height: 100vh; height: 100vh; border-radius: 0; }
+}

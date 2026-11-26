@@ -1,0 +1,14 @@
+# Environment
+.env
+**/.env
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Virtual environment
+venv/
+.venv/
+
+# Ảnh người dùng tải lên (không đưa lên Git)
+uploads/

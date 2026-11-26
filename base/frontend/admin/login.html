@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Đăng nhập quản trị</title>
+  <link rel="stylesheet" href="../css/admin.css">
+</head>
+<body>
+  <div class="login-box">
+    <div class="card">
+      <h2 style="margin-top:0">Đăng nhập quản trị</h2>
+      <form id="loginForm">
+        <input type="text" id="email" placeholder="Email" autocomplete="username" required>
+        <input type="password" id="password" placeholder="Mật khẩu" autocomplete="current-password" required>
+        <button class="btn" type="submit">Đăng nhập</button>
+        <p class="error" id="msg"></p>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = "http://127.0.0.1:8000/api"; // giống admin.js
+    const TOKEN_KEY = "unimarket_token";
+    const msg = document.getElementById("msg");
+
+    localStorage.removeItem(TOKEN_KEY);
+    if (new URLSearchParams(location.search).get("denied")) {
+      msg.textContent = "Bạn không có quyền truy cập trang quản trị.";
+    }
+
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      msg.textContent = "";
+      try {
+        const res = await fetch(API_BASE + "/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: document.getElementById("email").value,
+            password: document.getElementById("password").value,
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(typeof data.detail === "string" ? data.detail : "Đăng nhập thất bại");
+        if (data.user.role !== "ADMIN") throw new Error("Tài khoản này không có quyền quản trị");
+        localStorage.setItem(TOKEN_KEY, data.access_token);
+        location.replace("index.html");
+      } catch (err) {
+        msg.textContent = err instanceof TypeError ? "Không kết nối được máy chủ" : err.message;
+      }
+    });
+  </script>
+</body>
+</html>
