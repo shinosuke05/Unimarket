@@ -11,8 +11,8 @@ from sqlalchemy import (
     Numeric,
     Enum,
 )
-
 from sqlalchemy.orm import relationship, synonym
+
 from app.db.session import Base
 
 
@@ -50,9 +50,7 @@ class Order(Base):
     )
 
     recipient = Column(String(100), nullable=False)
-
     receiver_phone = Column(String(20), nullable=True)
-
     address = Column(String(255), nullable=False)
 
     receiving_method = Column(
@@ -65,23 +63,9 @@ class Order(Base):
         nullable=False
     )
 
-    subtotal = Column(
-        Numeric(12, 2),
-        nullable=False,
-        default=0
-    )
-
-    shipping_fee = Column(
-        Numeric(12, 2),
-        nullable=False,
-        default=0
-    )
-
-    total_amount = Column(
-        Numeric(12, 2),
-        nullable=False,
-        default=0
-    )
+    subtotal = Column(Numeric(12, 2), nullable=False, default=0)
+    shipping_fee = Column(Numeric(12, 2), nullable=False, default=0)
+    total_amount = Column(Numeric(12, 2), nullable=False, default=0)
 
     note = Column(String(500), nullable=True)
 
@@ -110,7 +94,12 @@ class Order(Base):
         cascade="all, delete-orphan"
     )
 
-    # Tương thích giữa các module
+    status_histories = relationship(
+        "OrderStatusHistory",
+        back_populates="order",
+        order_by="OrderStatusHistory.created_at"
+    )
+
     buyer_id = synonym("user_id")
     receiver_name = synonym("recipient")
     shipping_address = synonym("address")

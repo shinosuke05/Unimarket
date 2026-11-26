@@ -1,15 +1,221 @@
+
 <!DOCTYPE html>
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Khách hàng | Unimarket Admin</title>
+  <title>Khách hàng | UniMarket Admin</title>
   <link rel="stylesheet" href="../css/admin.css">
+  <style>
+    .customer-tools {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+    }
+
+    .customer-tools input {
+        flex: 1;
+        min-width: 200px;
+        padding: 10px;
+    }
+
+    .customer-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .customer-table th,
+    .customer-table td {
+        padding: 12px;
+        border-bottom: 1px solid #ddd;
+        text-align: left;
+    }
+
+    .customer-table button {
+        padding: 7px 12px;
+        cursor: pointer;
+    }
+
+    .customer-orders {
+        margin-top: 20px;
+    }
+
+    .customer-orders .order-row {
+        padding: 12px;
+        border-bottom: 1px solid #ddd;
+    }
+
+    @media(max-width: 700px) {
+        .customer-table {
+            display: block;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+    }
+  </style>
 </head>
-<body data-page="ccustomers" data-title="Khách hàng">
-  <main id="content">
-    <div class="card"><p class="placeholder">Chức năng đang được phát triển.</p></div>
-  </main>
-  <script src="../js/admin.js"></script>
+
+<body data-page="customers" data-title="Khách hàng">
+<main id="content">
+  <section class="card">
+    <h2>Danh sách khách hàng</h2>
+
+    <div class="customer-tools">
+      <input
+              id="customer-search"
+              type="search"
+              placeholder="Tìm tên, email hoặc số điện thoại"
+      >
+      <button id="customer-reload" type="button">
+        Tải lại
+      </button>
+    </div>
+
+    <p id="customer-message">Đang tải khách hàng...</p>
+
+    <table class="customer-table">
+      <thead>
+      <tr>
+        <th>ID</th>
+        <th>Họ tên</th>
+        <th>Email</th>
+        <th>Số điện thoại</th>
+        <th>Số đơn</th>
+        <th>Tổng mua</th>
+        <th>Thao tác</th>
+      </tr>
+      </thead>
+      <tbody id="customer-list"></tbody>
+    </table>
+  </section>
+
+  <section class="card customer-orders" id="customer-detail" hidden>
+    <h2>Thông tin khách hàng</h2>
+    <div id="customer-info"></div>
+
+    <h3>Lịch sử mua hàng</h3>
+    <div id="customer-order-list"></div>
+  </section>
+<section class="card"><h2>Khách hàng mẫu (DEMO)</h2><p class="muted">Dữ liệu mẫu minh họa giao diện, không lưu vào hệ thống và không thể xử lý giao dịch.</p><table class="customer-table"><thead><tr><th>ID</th><th>Họ tên</th><th>Email</th><th>Số điện thoại</th><th>Số đơn</th><th>Tổng mua</th><th>Thao tác</th></tr></thead><tbody><tr><td>DEMO01</td><td>Nguyễn Minh Anh</td><td>demo1@example.test</td><td>09xx xxx 001</td><td>1</td><td>0 ₫</td><td><details><summary>Xem đơn mẫu</summary>DEMO01 · Chờ xác nhận</details></td></tr><tr><td>DEMO02</td><td>Trần Hoàng Nam</td><td>demo2@example.test</td><td>09xx xxx 002</td><td>1</td><td>0 ₫</td><td><details><summary>Xem đơn mẫu</summary>DEMO02 · Đã xác nhận</details></td></tr><tr><td>DEMO03</td><td>Lê Thu Hà</td><td>demo3@example.test</td><td>09xx xxx 003</td><td>1</td><td>0 ₫</td><td><details><summary>Xem đơn mẫu</summary>DEMO03 · Đang giao</details></td></tr><tr><td>DEMO04</td><td>Phạm Đức Huy</td><td>demo4@example.test</td><td>09xx xxx 004</td><td>1</td><td>240.000 ₫</td><td><details><summary>Xem đơn mẫu</summary>DEMO04 · Hoàn thành</details></td></tr></tbody></table></section>
+</main>
+
+<script src="../js/admin.js"></script>
+
+<script>
+  let customerSearchTimer;
+
+  const customerSearch =
+      document.getElementById("customer-search");
+
+  const customerList =
+      document.getElementById("customer-list");
+
+  const customerMessage =
+      document.getElementById("customer-message");
+
+  function customerEscape(value) {
+      return String(value ?? "").replace(/[&<>"']/g, c => ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#39;"
+      })[c]);
+  }
+
+  function customerMoney(value) {
+      return Number(value || 0).toLocaleString("vi-VN") + " ₫";
+  }
+
+  async function loadCustomers() {
+      customerMessage.textContent = "Đang tải khách hàng...";
+
+      try {
+          const q = customerSearch.value.trim();
+
+          const customers = await AdminApp.api(
+              "/admin/customers?q=" + encodeURIComponent(q)
+          );
+
+          customerList.innerHTML = customers.length
+              ? customers.map(customer => `
+                  <tr>
+                      <td>${customer.id}</td>
+                      <td>${customerEscape(customer.full_name)}</td>
+                      <td>${customerEscape(customer.email)}</td>
+                      <td>${customerEscape(customer.phone || "—")}</td>
+                      <td>${customer.total_orders}</td>
+                      <td>${customerMoney(customer.total_spent)}</td>
+                      <td>
+                          <button
+                              type="button"
+                              onclick="viewCustomerOrders(${customer.id})"
+                          >
+                              Xem đơn
+                          </button>
+                      </td>
+                  </tr>
+              `).join("")
+              : `<tr><td colspan="7">Chưa có khách hàng.</td></tr>`;
+
+          customerMessage.textContent =
+              `Tìm thấy ${customers.length} khách hàng.`;
+
+      } catch (error) {
+          customerMessage.textContent = error.message;
+      }
+  }
+
+  async function viewCustomerOrders(customerId) {
+      const detail = document.getElementById("customer-detail");
+      const info = document.getElementById("customer-info");
+      const orderList = document.getElementById("customer-order-list");
+
+      detail.hidden = false;
+      info.textContent = "Đang tải...";
+      orderList.innerHTML = "";
+
+      try {
+          const data = await AdminApp.api(
+              `/admin/customers/${customerId}/orders`
+          );
+
+          const customer = data.customer;
+
+          info.innerHTML = `
+              <p><b>Họ tên:</b> ${customerEscape(customer.full_name)}</p>
+              <p><b>Email:</b> ${customerEscape(customer.email)}</p>
+              <p><b>Số điện thoại:</b> ${customerEscape(customer.phone || "—")}</p>
+          `;
+
+          orderList.innerHTML = data.orders.length
+              ? data.orders.map(order => `
+                  <div class="order-row">
+                      <b>Đơn DH${order.id}</b> <a href="orders.html?id=${Number(order.id)}">Xử lý đơn</a>
+                      <p>Trạng thái: ${customerEscape(order.status)}</p>
+                      <p>Tổng tiền: ${customerMoney(order.total_amount)}</p>
+                      <p>Ngày đặt: ${customerEscape(order.created_at || "")}</p>
+                  </div>
+              `).join("")
+              : "<p>Khách hàng chưa có đơn hàng.</p>";
+
+          detail.scrollIntoView({ behavior: "smooth" });
+
+      } catch (error) {
+          info.textContent = error.message;
+      }
+  }
+
+  document.addEventListener("admin:ready", loadCustomers);
+
+  document.getElementById("customer-reload")
+      .addEventListener("click", loadCustomers);
+
+  customerSearch.addEventListener("input", () => {
+      clearTimeout(customerSearchTimer);
+      customerSearchTimer = setTimeout(loadCustomers, 300);
+  });
+</script>
 </body>
 </html>

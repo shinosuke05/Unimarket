@@ -13,6 +13,8 @@ from app.models.cart_item import CartItem
 from app.models.item import Item
 from app.models.order import Order, OrderStatus
 from app.models.order_item import OrderItem
+from app.models.payment import Payment
+from app.models.order_status_history import OrderStatusHistory
 from app.schemas.order import (
     FulfillmentType,
     OrderBuyNow,
@@ -81,7 +83,7 @@ def _create_order(
     db: Session,
     user_id: int,
     data: OrderCreate,
-    raw_items: list[tuple[int, int]]
+    raw_items: list[tuple[int, int]],
 ) -> Order:
 
     merged = {}
@@ -106,7 +108,6 @@ def _create_order(
     subtotal = Decimal("0")
 
     for item_id, quantity in merged.items():
-
         item = items_map[item_id]
 
         if item.quantity < quantity:
@@ -153,7 +154,6 @@ def _create_order(
     )
 
     for item_id, quantity in merged.items():
-
         item = items_map[item_id]
         item.quantity -= quantity
 
@@ -161,6 +161,18 @@ def _create_order(
             item.status = ProductStatus.SOLD
 
     db.add(order)
+    db.flush()
+    order.payment = Payment(method=getattr(order.payment_method, "value", order.payment_method), amount=order.total_amount, status="UNPAID", transfer_note=f"DH{order.id}")
+
+    db.add(
+        OrderStatusHistory(
+            order_id=order.id,
+            changed_by=user_id,
+            old_status=None,
+            new_status="PENDING",
+            note="Đơn hàng được tạo"
+        )
+    )
 
     return order
 
@@ -273,7 +285,11 @@ def list_orders(
 
     query = (
         select(Order)
-        .options(selectinload(Order.items))
+        .options(
+            selectinload(Order.items),
+            selectinload(Order.payment),
+            selectinload(Order.status_histories)
+        )
         .order_by(Order.id.desc())
     )
 
@@ -288,7 +304,6 @@ def list_orders(
         )
 
     if q and q.strip():
-
         keyword = q.strip()
 
         condition = or_(
@@ -318,4 +333,14 @@ def get_order(
     order_id: int
 ) -> Order | None:
 
-    return db.get(Order, order_id)
+    query = (
+        select(Order)
+        .options(
+            selectinload(Order.items),
+            selectinload(Order.payment),
+            selectinload(Order.status_histories)
+        )
+        .where(Order.id == order_id)
+    )
+
+    return db.scalar(query)

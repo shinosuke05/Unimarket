@@ -105,9 +105,9 @@
 
       <div class="gallery-head">
         <h4>Ảnh sản phẩm (<span id="imgCount">0</span>/5)</h4>
-        <input id="imgFiles" type="file" accept="image/jpeg,image/png,image/webp" multiple>
+        <input id="imgFiles" type="file" accept="image/jpeg,image/png" multiple>
       </div>
-      <p class="hint">jpg/png/webp, tối đa 2MB mỗi ảnh. Ảnh đầu tiên tự làm ảnh đại diện. Ảnh đã lưu được thêm/xoá/đặt đại diện ngay; ảnh mới chọn sẽ tải lên khi bấm Lưu.</p>
+      <p class="hint">jpg/png, tối đa 2MB mỗi ảnh. Ảnh đầu tiên tự làm ảnh đại diện. Ảnh đã lưu được thêm/xoá/đặt đại diện ngay; ảnh mới chọn sẽ tải lên khi bấm Lưu.</p>
       <div class="img-grid" id="gallery"></div>
     </div>
     <div class="modal-foot">
@@ -120,7 +120,6 @@
   <script>
     const CONDITION = { NEW: "Mới", LIKE_NEW: "Như mới", GOOD: "Còn tốt", FAIR: "Đã dùng nhiều" };
     const STATUS = { AVAILABLE: "Đang bán", SOLD: "Đã bán", HIDDEN: "Đang ẩn" };
-    const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
     const MAX_IMAGES = 5, MAX_MB = 2, PER_PAGE = 10;
 
     let items = [];        // đã lọc xong, hiển thị ra bảng
@@ -356,7 +355,7 @@
         if (savedImages().length + queued.length >= MAX_IMAGES) {
           formError(`Mỗi sản phẩm tối đa ${MAX_IMAGES} ảnh`); break;
         }
-        if (!ALLOWED_TYPES.includes(f.type)) { formError(`"${f.name}" không phải jpg/png/webp`); continue; }
+        if (!["image/jpeg", "image/png"].includes(f.type)) { formError(`"${f.name}" không phải jpg/png`); continue; }
         if (f.size > MAX_MB * 1024 * 1024) { formError(`"${f.name}" vượt quá ${MAX_MB}MB`); continue; }
         queued.push(f);
         previews.push(URL.createObjectURL(f));

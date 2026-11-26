@@ -1,15 +1,178 @@
+
 <!DOCTYPE html>
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Cài đặt liên hệ | Unimarket Admin</title>
+  <title>Cài đặt | UniMarket Admin</title>
   <link rel="stylesheet" href="../css/admin.css">
+  <style>
+    .setting-form {
+        display: grid;
+        gap: 14px;
+        max-width: 650px;
+    }
+
+    .setting-form label {
+        display: grid;
+        gap: 6px;
+    }
+
+    .setting-form input {
+        padding: 10px;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .setting-form button {
+        padding: 12px;
+    }
+
+    #qr-preview {
+        max-width: 240px;
+        max-height: 240px;
+        object-fit: contain;
+    }
+  </style>
 </head>
-<body data-page="settings" data-title="Cài đặt liên hệ">
-  <main id="content">
-    <div class="card"><p class="placeholder">Chức năng đang được phát triển.</p></div>
-  </main>
-  <script src="../js/admin.js"></script>
+
+<body data-page="settings" data-title="Cài đặt cửa hàng">
+<main id="content">
+  <section class="card">
+    <h2>Cài đặt liên hệ và thanh toán</h2><p>Cập nhật thông tin hiển thị trên trang liên hệ, chi tiết sản phẩm và thanh toán QR.</p>
+    <p id="setting-message">Đang tải cài đặt...</p>
+
+    <form id="setting-form" class="setting-form">
+      <label>
+        Ngân hàng
+        <input id="bank-name" type="text">
+      </label>
+
+      <label>
+        Số tài khoản
+        <input id="bank-account" type="text">
+      </label>
+
+      <label>
+        Chủ tài khoản
+        <input id="bank-owner" type="text">
+      </label>
+
+      <label>
+        Đường dẫn ảnh QR chuyển khoản (URL ảnh trực tiếp)
+        <input id="qr-url" type="url">
+      </label>
+
+      <img id="qr-preview" alt="Xem trước mã QR" hidden>
+
+      <h3>Thông tin liên hệ</h3>
+      <label>
+        Số điện thoại hỗ trợ
+        <input id="phone" type="text">
+      </label>
+
+      <label>
+        Zalo
+        <input id="zalo" type="text">
+      </label>
+
+      <label>
+        Facebook
+        <input id="facebook" type="url">
+      </label>
+
+      <button type="submit" id="save-settings">
+        Lưu cài đặt
+      </button>
+    </form>
+  </section>
+</main>
+
+<script src="../js/admin.js"></script>
+
+<script>
+  const settingForm = document.getElementById("setting-form");
+  const settingMessage = document.getElementById("setting-message");
+
+  const fields = {
+      bank_name: "bank-name",
+      bank_account_number: "bank-account",
+      bank_account_holder: "bank-owner",
+      qr_image_url: "qr-url",
+      phone: "phone",
+      zalo: "zalo",
+      facebook_url: "facebook",
+  };
+
+  function updateQrPreview() {
+      const url = document.getElementById("qr-url").value.trim();
+      const preview = document.getElementById("qr-preview");
+
+      preview.hidden = !url;
+
+      if (url) {
+          preview.src = url;
+          preview.onerror = () => { preview.hidden = true; settingMessage.textContent = "Không tải được ảnh QR. Hãy dùng URL ảnh trực tiếp."; };
+      } else {
+          preview.removeAttribute("src");
+      }
+  }
+
+  async function loadSettings() {
+      try {
+          const settings = await AdminApp.api("/store-settings");
+
+          for (const [key, id] of Object.entries(fields)) {
+              document.getElementById(id).value =
+                  settings[key] || "";
+          }
+
+          updateQrPreview();
+          settingMessage.textContent = "Đã tải cài đặt.";
+
+      } catch (error) {
+          settingMessage.textContent = error.message;
+      }
+  }
+
+  settingForm.addEventListener("submit", async event => {
+      event.preventDefault();
+
+      const button =
+          document.getElementById("save-settings");
+
+      const data = {};
+
+      for (const [key, id] of Object.entries(fields)) {
+          data[key] =
+              document.getElementById(id).value.trim() || null;
+      }
+
+      button.disabled = true;
+      settingMessage.textContent = "Đang lưu...";
+
+      try {
+          await AdminApp.api("/store-settings", {
+              method: "PUT",
+              body: JSON.stringify(data),
+          });
+
+          settingMessage.textContent =
+              "Đã lưu thông tin cửa hàng.";
+
+          updateQrPreview();
+
+      } catch (error) {
+          settingMessage.textContent = error.message;
+      } finally {
+          button.disabled = false;
+      }
+  });
+
+  document.getElementById("qr-url")
+      .addEventListener("input", updateQrPreview);
+
+  document.addEventListener("admin:ready", loadSettings);
+</script>
 </body>
 </html>

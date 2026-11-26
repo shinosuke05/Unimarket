@@ -3,8 +3,8 @@
 (function () {
   const API_BASE = "http://127.0.0.1:8000/api"; // đổi khi deploy
   const FILE_BASE = API_BASE.replace(/\/api$/, "");
-  const TOKEN_KEY = "token";
-  const LOGIN_URL = "../pages/auth.html";
+  const TOKEN_KEY = "unimarket_token";
+  const LOGIN_URL = "login.html";
 
   const MENU = [
     { key: "dashboard", label: "Dashboard", href: "index.html", icon: "📊" },

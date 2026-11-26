@@ -217,7 +217,7 @@ function renderOrder(container, order) {
 
                 Đơn hàng đã được tạo.
                 Vui lòng kiểm tra trạng thái thanh toán
-                trước khi thực hiện chuyển khoản.
+                trước khi thực hiện chuyển khoản. <a class="btn" href="../pay.html?id=${Number(order.id)}">Mở thanh toán QR</a>
 
             </div>
         `;

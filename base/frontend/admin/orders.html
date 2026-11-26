@@ -1,15 +1,2 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Đơn hàng | Unimarket Admin</title>
-  <link rel="stylesheet" href="../css/admin.css">
-</head>
-<body data-page="orders" data-title="Đơn hàng">
-  <main id="content">
-    <div class="card"><p class="placeholder">Chức năng đang được phát triển.</p></div>
-  </main>
-  <script src="../js/admin.js"></script>
-</body>
-</html>
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Quản lý đơn hàng</title><link rel="stylesheet" href="../css/admin.css"><link rel="stylesheet" href="../css/order-admin.css"></head><body data-page="orders" data-title="Quản lý đơn hàng"><main id="content"><div class="grid" id="summary"></div><section class="card"><h2>Danh sách đơn hàng</h2><form id="filters" class="order-tools"><input id="keyword" placeholder="Mã đơn / SĐT / người nhận"><select id="status"><option value="">Tất cả trạng thái</option></select><select id="payment"><option value="">Tất cả thanh toán</option></select><button class="btn">Tìm kiếm</button><button type="button" id="reload" class="btn">Tải lại</button></form><p id="message" role="status"></p><div class="table-wrap"><table><thead><tr><th>Mã đơn</th><th>Người nhận</th><th>SĐT</th><th>Tổng tiền</th><th>Trạng thái</th><th>Thanh toán</th><th>Thao tác</th></tr></thead><tbody id="rows"></tbody></table></div></section><section class="card" id="detail" hidden></section><section class="card"><h2>Đơn hàng mẫu (DEMO)</h2><p class="muted">Dữ liệu mẫu minh họa giao diện, không lưu vào hệ thống và không thể xử lý giao dịch.</p><div class="table-wrap"><table><thead><tr><th>Mã đơn</th><th>Người nhận</th><th>SĐT</th><th>Tổng tiền</th><th>Trạng thái</th><th>Thanh toán</th><th>Thao tác</th></tr></thead><tbody><tr><td>DEMO01</td><td>Nguyễn Minh Anh</td><td>09xx xxx 001</td><td>350.000 ₫</td><td><span class="order-tag PENDING">Chờ xác nhận</span></td><td>Chưa thanh toán</td><td><details><summary>Chi tiết mẫu</summary>Tai nghe Bluetooth · SL: 1</details></td></tr><tr><td>DEMO02</td><td>Trần Hoàng Nam</td><td>09xx xxx 002</td><td>520.000 ₫</td><td><span class="order-tag CONFIRMED">Đã xác nhận</span></td><td>Chờ xác nhận tiền</td><td><details><summary>Chi tiết mẫu</summary>Bàn phím cơ · SL: 1</details></td></tr><tr><td>DEMO03</td><td>Lê Thu Hà</td><td>09xx xxx 003</td><td>780.000 ₫</td><td><span class="order-tag SHIPPING">Đang giao</span></td><td>Đã thanh toán</td><td><details><summary>Chi tiết mẫu</summary>Màn hình máy tính · SL: 1</details></td></tr><tr><td>DEMO04</td><td>Phạm Đức Huy</td><td>09xx xxx 004</td><td>240.000 ₫</td><td><span class="order-tag COMPLETED">Hoàn thành</span></td><td>Đã thanh toán</td><td><details><summary>Chi tiết mẫu</summary>Chuột không dây · SL: 1</details></td></tr></tbody></table></div></section>
+</main><script src="../js/admin.js"></script><script src="../js/pages/admin-order-manager.js"></script></body></html>

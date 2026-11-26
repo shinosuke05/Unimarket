@@ -1,4 +1,4 @@
-
+from app.routers import store_settings
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -94,7 +94,7 @@ app.include_router(cart_router, prefix="/api")
 app.include_router(orders.router, prefix="/api")
 app.include_router(customer_orders.router, prefix="/api")
 app.include_router(admin_orders.router, prefix="/api")
-
+app.include_router(store_settings.router, prefix="/api")
 
 @app.get("/")
 def root():
