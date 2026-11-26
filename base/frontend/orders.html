@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+    <link rel="stylesheet" href="css/style.css"></head>
+<body><main>
+    <h1>Đơn hàng của tôi</h1>
+    <div class="tabs" id="tabs"></div>
+    <div id="list"></div>
+</main>
+<script src="js/common.js"></script>
+<script>
+    layout("Đơn hàng của tôi");
+    let current = "";
+    const tabs = [["", "Tất cả"], ...Object.entries(STATUS).map(([k, v]) => [k, v[0]])];
+    $("#tabs").innerHTML = tabs.map(([k, l]) => `<button data-s="${k}" class="${k === current ? "on" : ""}">${l}</button>`).join("");
+    $("#tabs").onclick = (e) => {
+      if (!e.target.dataset) return;
+      current = e.target.dataset.s;
+      document.querySelectorAll("#tabs button").forEach((b) => b.classList.toggle("on", b.dataset.s === current));
+      load();
+    };
+    async function load() {
+      $("#list").innerHTML = `<p class="empty">Đang tải...</p>`;
+      try {
+        const orders = await api("/orders" + (current ? "?status=" + current : ""));
+        $("#list").innerHTML = orders.length ? orders.map((o) => `
+          <a class="card row" style="text-decoration:none;color:inherit" href="order-detail.html?id=${o.id}">
+            <div><b>${o.code}</b> ${badge(STATUS, o.status)}<div class="mute">${fmtDate(o.created_at)}</div>
+              <div>${o.items.map((i) => esc(i.item_name) + " ×" + i.quantity).join(", ")}</div></div>
+            <b>${money(o.total_amount)}</b>
+          </a>`).join("") : `<p class="empty">Chưa có đơn nào${current ? " ở trạng thái này" : ""}. Hãy tìm món đồ bạn cần ở trang chủ.</p>`;
+      } catch (e) { $("#list").innerHTML = `<p class="empty">${esc(e.message)}</p>`; }
+    }
+    load();
+</script></body></html>
