@@ -205,4 +205,3 @@ CREATE TABLE IF NOT EXISTS product_images (
   CONSTRAINT fk_product_images_product FOREIGN KEY (product_id)
     REFERENCES products(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
-

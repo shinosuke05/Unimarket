@@ -9,3 +9,11 @@ venv311/
 __pycache__/
 .env
 .idea/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Python cache
+__pycache__/
+*.pyc
